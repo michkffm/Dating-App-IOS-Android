@@ -10,17 +10,20 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
+import { useNavigation } from "expo-router";
 
 export default function UploadPhoto() {
-  const [images, setImages] = useState(Array(4).fill(null)); // Tableau de 4 images initialisées à null
+  const [images, setImages] = useState(Array(4).fill(null));
   const [loading, setLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const router = useRouter();
+  const navigation = useNavigation();
 
-  // Fonction pour choisir une image
   const pickImage = async (index) => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Correction ici
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.7,
@@ -39,20 +42,15 @@ export default function UploadPhoto() {
     }
   };
 
-  // Fonction pour supprimer une image
   const removeImage = (index) => {
     const newImages = [...images];
-    newImages[index] = null; // Remet l'index à null
+    newImages[index] = null;
     setImages(newImages);
   };
 
-  // Fonction pour uploader les images
   const uploadImage = async () => {
     if (!images.some((image) => image?.uri)) {
-      Alert.alert(
-        "Erreur",
-        "Veuillez sélectionner au moins une image avant de télécharger."
-      );
+      Alert.alert("Erreur", "Veuillez sélectionner au moins une image.");
       return;
     }
 
@@ -84,7 +82,9 @@ export default function UploadPhoto() {
 
       if (result.secure_url) {
         Alert.alert("Succès", "Images téléchargées avec succès");
-        setImages(Array(4).fill(null)); // Réinitialise après téléchargement
+        setImages(Array(4).fill(null));
+        setUploadSuccess(true);
+        navigation.navigate("home");
       }
     } catch (error) {
       Alert.alert("Erreur", "Échec du téléchargement");
@@ -104,7 +104,6 @@ export default function UploadPhoto() {
       }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center" }}>
-        {/* Container des images */}
         <View
           style={{
             flexDirection: "row",
@@ -123,7 +122,7 @@ export default function UploadPhoto() {
                 height: 250,
                 borderRadius: 8,
                 overflow: "hidden",
-                backgroundColor: "#ecf0f1", // Fond gris clair si aucune image
+                backgroundColor: "#ecf0f1",
                 justifyContent: "center",
                 alignItems: "center",
               }}
@@ -182,31 +181,46 @@ export default function UploadPhoto() {
           ))}
         </View>
 
-        {/* Bouton de téléchargement */}
-        {images.some((image) => image?.uri) && (
+        {!uploadSuccess ? (
+          images.some((image) => image?.uri) && (
+            <TouchableOpacity
+              onPress={uploadImage}
+              style={{
+                padding: 15,
+                backgroundColor: "#2ecc71",
+                borderRadius: 20,
+                width: "80%",
+                alignItems: "center",
+                marginTop: 20,
+              }}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text
+                  style={{ color: "white", fontSize: 16, fontWeight: "bold" }}
+                >
+                  Télécharger les images
+                </Text>
+              )}
+            </TouchableOpacity>
+          )
+        ) : (
           <TouchableOpacity
-            onPress={uploadImage}
+            onPress={() => router.push("/home")}
             style={{
               padding: 15,
-              backgroundColor: "#2ecc71",
+              backgroundColor: "#3498db",
               borderRadius: 20,
               width: "80%",
               alignItems: "center",
               marginTop: 20,
             }}
-            disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Link href="/home">
-              <Text
-                style={{ color: "white", fontSize: 16, fontWeight: "bold" }}
-              >
-                Télécharger les images
-              </Text>
-              </Link>
-            )}
+            <Text style={{ color: "white", fontSize: 16, fontWeight: "bold" }}>
+              Weiter
+            </Text>
           </TouchableOpacity>
         )}
       </ScrollView>
