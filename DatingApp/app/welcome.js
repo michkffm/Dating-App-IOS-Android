@@ -17,7 +17,7 @@ const Welcome = () => {
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState(null);
   const [lookingFor, setLookingFor] = useState(null);
-  const [relationshipStatus, setRelationshipStatus] = useState(null);  
+  const [relationshipStatus, setRelationshipStatus] = useState(null);
 
   return (
     <KeyboardAvoidingView
@@ -105,74 +105,86 @@ const Welcome = () => {
         </View>
 
         {/* Sélection du statut de relation */}
-<View style={styles.genderGroup}>
-  <Text style={styles.label}>Wonach suchst du hier?</Text>
-  <Text style={styles.note}>
-    Das kann sich auch mal ändern, kein Thema. Hier finden alle etwas Passendes.
-  </Text>
-  <View style={styles.genderContainer}>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "Fest & ernsthafte Beziehung" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("Fest & ernsthafte Beziehung")}
-    >
-      <Ionicons name="heart" size={24} color="black" />
-      <Text style={styles.genderText}>Fest & ernsthafte Beziehung</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "Feste Beziehung mal sehen" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("Feste Beziehung mal sehen")}
-    >
-      <Ionicons name="heart-outline" size={24} color="black" />
-      <Text style={styles.genderText}>Feste Beziehung mal sehen</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "Nix Ernstes, offen für Festes" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("Nix Ernstes, offen für Festes")}
-    >
-      <Ionicons name="heart-half" size={24} color="black" />
-      <Text style={styles.genderText}>Nix Ernstes, offen für Festes</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "Nix Ernste" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("Nix Ernste")}
-    >
-      <Ionicons name="people" size={24} color="black" />
-      <Text style={styles.genderText}>Nix Ernste</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "Neue Freunde Finden" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("Neue Freunde Finden")}
-    >
-      <Ionicons name="heart-circle-outline" size={24} color="black" />
-      <Text style={styles.genderText}>Neue Freunde Finden</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[
-        styles.genderButton,
-        relationshipStatus === "weiss ich noch nicht" && styles.selectedGender,
-      ]}
-      onPress={() => setRelationshipStatus("weiss ich noch nicht")}
-    >
-      <Ionicons name="help-circle-outline" size={24} color="black" />
-      <Text style={styles.genderText}>weiss ich noch nicht</Text>
-    </TouchableOpacity>
-  </View>
-</View>
+        <View style={styles.genderGroup}>
+          <Text style={styles.label}>Wonach suchst du hier?</Text>
+          <Text style={styles.note}>
+            Das kann sich auch mal ändern, kein Thema. Hier finden alle etwas
+            Passendes.
+          </Text>
+          <View style={styles.genderContainer}>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "Fest & ernsthafte Beziehung" &&
+                  styles.selectedGender,
+              ]}
+              onPress={() =>
+                setRelationshipStatus("Fest & ernsthafte Beziehung")
+              }
+            >
+              <Ionicons name="heart" size={24} color="black" />
+              <Text style={styles.genderText}>Fest & ernsthafte Beziehung</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "Feste Beziehung mal sehen" &&
+                  styles.selectedGender,
+              ]}
+              onPress={() => setRelationshipStatus("Feste Beziehung mal sehen")}
+            >
+              <Ionicons name="heart-outline" size={24} color="black" />
+              <Text style={styles.genderText}>Feste Beziehung mal sehen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "Nix Ernstes, offen für Festes" &&
+                  styles.selectedGender,
+              ]}
+              onPress={() =>
+                setRelationshipStatus("Nix Ernstes, offen für Festes")
+              }
+            >
+              <Ionicons name="heart-half" size={24} color="black" />
+              <Text style={styles.genderText}>
+                Nix Ernstes, offen für Festes
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "Nix Ernste" && styles.selectedGender,
+              ]}
+              onPress={() => setRelationshipStatus("Nix Ernste")}
+            >
+              <Ionicons name="people" size={24} color="black" />
+              <Text style={styles.genderText}>Nix Ernste</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "Neue Freunde Finden" &&
+                  styles.selectedGender,
+              ]}
+              onPress={() => setRelationshipStatus("Neue Freunde Finden")}
+            >
+              <Ionicons name="heart-circle-outline" size={24} color="black" />
+              <Text style={styles.genderText}>Neue Freunde Finden</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderButton,
+                relationshipStatus === "weiss ich noch nicht" &&
+                  styles.selectedGender,
+              ]}
+              onPress={() => setRelationshipStatus("weiss ich noch nicht")}
+            >
+              <Ionicons name="help-circle-outline" size={24} color="black" />
+              <Text style={styles.genderText}>weiss ich noch nicht</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Bouton "Weiter" */}
         <Link href="/profile" asChild>
@@ -226,11 +238,11 @@ const styles = StyleSheet.create({
   },
   genderContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",  // Allow wrapping to next line
+    flexWrap: "wrap", // Allow wrapping to next line
     justifyContent: "space-between", // Evenly space out the buttons
   },
   genderButton: {
-    width: "30%",  // Ensures 3 buttons per row
+    width: "30%", // Ensures 3 buttons per row
     padding: 15,
     marginVertical: 5, // Add some space between buttons vertically
     backgroundColor: "#e0e0e0",

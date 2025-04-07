@@ -2,7 +2,6 @@ import { View, Text, Button, TouchableOpacity } from "react-native";
 import React from "react";
 import { Link, useRouter } from "expo-router";
 import "react-native-gesture-handler";
-import Home from "./home.js";
 
 const Page = () => {
   const router = useRouter();
