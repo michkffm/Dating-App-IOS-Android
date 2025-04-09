@@ -1,86 +1,73 @@
-import { View, Text, Button, TouchableOpacity } from "react-native";
 import React from "react";
-import { Link, useRouter } from "expo-router";
-import "react-native-gesture-handler";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { NavigationContainer } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons"; // ou 'react-native-vector-icons/Ionicons'
 
-const Page = () => {
-  const router = useRouter();
+import Home from "./screens/HomeScreen";
+import Product from "./screens/ProductScreen";
+import Settings from "./screens/SettingsScreen";
+import { CartProvider } from "./CartContext";
+import CartScreen from "./card";
+
+const Drawer = createDrawerNavigator();
+
+export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: "column",
-        justifyContent: "space-between",
-        alignContent: "center",
-        margin: 10,
-      }}
-    >
-      <View>
-        <Text style={{ fontSize: 20 }}>HeartPulse</Text>
-      </View>
-      <View>
-        <Text style={{ fontSize: 20, marginLeft: 110 }}>
-          welcone to our app
-        </Text>
-      </View>
-      <View
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 15,
-          marginBottom: 50,
+     <CartProvider>
+       <Drawer.Navigator
+        initialRouteName="HeartPulse"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "#6200EE",
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontSize: 22,
+          },
+          drawerStyle: {
+            backgroundColor: "#F8F9FA",
+            width: 260,
+          },
+          drawerActiveTintColor: "#6200EE",
+          drawerInactiveTintColor: "#333",
+          drawerLabelStyle: {
+            fontSize: 18,
+            marginLeft: -10,
+          },
         }}
       >
-        {/* About Page Link */}
-        <Link href="/register" asChild>
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.linkText}>Create account</Text>
-          </TouchableOpacity>
-        </Link>
-
-        {/* Contact Page Link */}
-        <Link href="/contact" asChild>
-          <TouchableOpacity style={styles.linkButtonSecondary}>
-            <Text style={styles.linkTextSecondary}>Login</Text>
-          </TouchableOpacity>
-        </Link>
-      </View>
-    </View>
+        <Drawer.Screen
+          name="HeartPulse"
+          component={Home}
+          options={{
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="home-outline" size={size} color={color} />
+            ),
+            title: "HeartPulse",
+          }}
+        />
+        <Drawer.Screen
+          name="Product"
+          component={Product}
+          options={{
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="pricetags-outline" size={size} color={color} />
+            ),
+            title: "Products",
+          }}
+        />
+        <Drawer.Screen
+          name="Settings"
+          component={Settings}
+          options={{
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="settings-outline" size={size} color={color} />
+            ),
+            title: "Settings",
+          }}
+        />
+      </Drawer.Navigator>
+     </CartProvider>
   );
-};
-const styles = {
-  linkButton: {
-    backgroundColor: "#6200EE", // Couleur principale
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25, // Coins arrondis
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // Ombre pour Android
-  },
-  linkText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    width: 140,
-  },
-  linkButtonSecondary: {
-    backgroundColor: "#6200EE",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#6200EE",
-  },
-  linkTextSecondary: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    width: 140,
-    paddingHorizontal: 40,
-  },
-};
-
-export default Page;
+}

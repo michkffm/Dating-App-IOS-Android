@@ -27,10 +27,10 @@ const Welcome = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Saisie du prénom */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Wie heisst du mit Vorname?</Text>
+          <Text style={styles.label}>What is your first name?</Text>
           <TextInput
             style={styles.input}
-            placeholder="Vorname"
+            placeholder="First name"
             value={firstName}
             onChangeText={setFirstName}
           />
@@ -38,150 +38,125 @@ const Welcome = () => {
 
         {/* Saisie de la date de naissance */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Dein Geburtstag?</Text>
+          <Text style={styles.label}>Your birthday?</Text>
           <TextInput
             style={styles.input}
-            placeholder="Geburtstag (z.B. 01/01/2000)"
+            placeholder="Birthday (ex. 01/01/2000)"
             value={birthDate}
             onChangeText={setBirthDate}
             keyboardType="numeric"
           />
           <Text style={styles.note}>
-            Dein Profil zeigt dein Alter, nicht dein Geburtsdatum.
+            Your profile shows your age, not your date of birth.
           </Text>
         </View>
 
         {/* Sélection du genre */}
         <View style={styles.genderGroup}>
-          <Text style={styles.label}>Was ist dein Geschlecht?</Text>
+          <Text style={styles.label}>What is your gender?</Text>
           <Text style={styles.note}>
-            Wähle dein Geschlecht aus, du kannst es später ändern.
+            Choose your gender, you can change it later.
           </Text>
           <View style={styles.genderContainer}>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                gender === "Mann" && styles.selectedGender,
+                gender === "Man" && styles.selectedGender,
               ]}
-              onPress={() => setGender("Mann")}
+              onPress={() => setGender("Man")}
             >
-              <Text style={styles.genderText}>Mann</Text>
+              <Text style={styles.genderText}>Man</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                gender === "Frau" && styles.selectedGender,
+                gender === "Woman" && styles.selectedGender,
               ]}
-              onPress={() => setGender("Frau")}
+              onPress={() => setGender("Woman")}
             >
-              <Text style={styles.genderText}>Frau</Text>
+              <Text style={styles.genderText}>Woman</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Sélection de qui rencontrer */}
         <View style={styles.meetingGroup}>
-          <Text style={styles.label}>Wen möchtest du kennenlernen?</Text>
+          <Text style={styles.label}>Who would you like to get to know?</Text>
           <View style={styles.genderContainer}>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                lookingFor === "Mann" && styles.selectedGender,
+                lookingFor === "Man" && styles.selectedGender,
               ]}
-              onPress={() => setLookingFor("Mann")}
+              onPress={() => setLookingFor("Man")}
             >
-              <Text style={styles.genderText}>Mann</Text>
+              <Text style={styles.genderText}>Man</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                lookingFor === "Frau" && styles.selectedGender,
+                lookingFor === "Woman" && styles.selectedGender,
               ]}
-              onPress={() => setLookingFor("Frau")}
+              onPress={() => setLookingFor("Woman")}
             >
-              <Text style={styles.genderText}>Frau</Text>
+              <Text style={styles.genderText}>Woman</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Sélection du statut de relation */}
         <View style={styles.genderGroup}>
-          <Text style={styles.label}>Wonach suchst du hier?</Text>
+          <Text style={styles.label}>What are you looking for here?</Text>
           <Text style={styles.note}>
-            Das kann sich auch mal ändern, kein Thema. Hier finden alle etwas
-            Passendes.
+            That can change from time to time, no problem. Everyone will find
+            something suitable.
           </Text>
           <View style={styles.genderContainer}>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                relationshipStatus === "Fest & ernsthafte Beziehung" &&
+                relationshipStatus === "serious relationship" &&
                   styles.selectedGender,
               ]}
               onPress={() =>
-                setRelationshipStatus("Fest & ernsthafte Beziehung")
+                setRelationshipStatus("serious relationship")
               }
             >
               <Ionicons name="heart" size={24} color="black" />
-              <Text style={styles.genderText}>Fest & ernsthafte Beziehung</Text>
+              <Text style={styles.genderText}>serious relationship</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                relationshipStatus === "Feste Beziehung mal sehen" &&
+                relationshipStatus === "Nothing serious" &&
                   styles.selectedGender,
               ]}
-              onPress={() => setRelationshipStatus("Feste Beziehung mal sehen")}
-            >
-              <Ionicons name="heart-outline" size={24} color="black" />
-              <Text style={styles.genderText}>Feste Beziehung mal sehen</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.genderButton,
-                relationshipStatus === "Nix Ernstes, offen für Festes" &&
-                  styles.selectedGender,
-              ]}
-              onPress={() =>
-                setRelationshipStatus("Nix Ernstes, offen für Festes")
-              }
-            >
-              <Ionicons name="heart-half" size={24} color="black" />
-              <Text style={styles.genderText}>
-                Nix Ernstes, offen für Festes
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.genderButton,
-                relationshipStatus === "Nix Ernste" && styles.selectedGender,
-              ]}
-              onPress={() => setRelationshipStatus("Nix Ernste")}
+              onPress={() => setRelationshipStatus("Nothing serious")}
             >
               <Ionicons name="people" size={24} color="black" />
-              <Text style={styles.genderText}>Nix Ernste</Text>
+              <Text style={styles.genderText}>Nothing serious</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                relationshipStatus === "Neue Freunde Finden" &&
+                relationshipStatus === "Find new friends" &&
                   styles.selectedGender,
               ]}
-              onPress={() => setRelationshipStatus("Neue Freunde Finden")}
+              onPress={() => setRelationshipStatus("Find new friends")}
             >
               <Ionicons name="heart-circle-outline" size={24} color="black" />
-              <Text style={styles.genderText}>Neue Freunde Finden</Text>
+              <Text style={styles.genderText}>Find new friends</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.genderButton,
-                relationshipStatus === "weiss ich noch nicht" &&
+                relationshipStatus === "I don't know yet" &&
                   styles.selectedGender,
               ]}
-              onPress={() => setRelationshipStatus("weiss ich noch nicht")}
+              onPress={() => setRelationshipStatus("I don't know yet")}
             >
               <Ionicons name="help-circle-outline" size={24} color="black" />
-              <Text style={styles.genderText}>weiss ich noch nicht</Text>
+              <Text style={styles.genderText}>I don't know yet</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -259,10 +234,11 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 20,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#6200EE",
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
+    marginBottom: 70,
   },
   buttonText: {
     color: "white",

@@ -10,7 +10,7 @@ const Layout = () => {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: "purple",
+          backgroundColor: "#6200EE",
         },
         headerTintColor: "#fff",
         headerTitleStyle: {
@@ -37,7 +37,7 @@ const Layout = () => {
       <Stack.Screen name="contact" options={{ headerTitle: "Contact" }} />
       <Stack.Screen
         name="welcome"
-        options={{ headerTitle: "Welcome to HeartPulse" }}
+        options={{ headerTitle: "About you" }}
       />
       <Stack.Screen name="profile" options={{ headerTitle: "Profile Bild" }} />
       <Stack.Screen
@@ -45,6 +45,13 @@ const Layout = () => {
         options={{ headerTitle: "Feed" }}
       />
       <Stack.Screen name="phone" options={{ headerTitle: "Phone Number" }} />
+      <Stack.Screen name="email" options={{ headerTitle: "Email" }} />
+      <Stack.Screen name="buy" options={{ headerTitle: "Buy" }} />
+      <Stack.Screen name="card" options={{ headerTitle: "Card" }} />
+      <Stack.Screen name="info" options={{ headerTitle: "Information" }} />
+      <Stack.Screen name="payment" options={{ headerTitle: "Payment" }} />
+      <Stack.Screen name="paypal" options={{ headerTitle: "Paypal" }} />
+      <Stack.Screen name="orange" options={{ headerTitle: "Pay with Cinetpay" }} />
       <Stack.Screen name="settings" options={{ headerTitle: "Settings" }} />
       <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
       <Stack.Screen

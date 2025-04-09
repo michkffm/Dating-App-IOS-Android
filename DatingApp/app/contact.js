@@ -13,20 +13,18 @@ import { Link } from "expo-router";
 const PhoneNumberScreen = () => {
   const [countryCode, setCountryCode] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [countries, setCountries] = useState(() => []);
+  const [countries, setCountries] = useState([]);
 
   useEffect(() => {
     // Récupérer les codes de pays lors du chargement du composant
     const fetchCountryCodes = async () => {
       try {
         const data = await getCountryCodes();
-        setCountries(data); // Mettre à jour l'état avec les données de l'API
-        setCountryCode(data[0]?.countryCode); // Définir le premier code de pays par défaut
+        const sortedCountries = data.sort((a, b) => a.country.localeCompare(b.country)); // Tri des pays par ordre alphabétique
+        setCountries(sortedCountries); // Mettre à jour l'état avec les pays triés
+        setCountryCode(sortedCountries[0]?.countryCode); // Définir le premier code de pays par défaut
       } catch (error) {
-        console.error(
-          "Erreur lors de la récupération des codes de pays",
-          error
-        );
+        console.error("Erreur lors de la récupération des codes de pays", error);
       }
     };
 
@@ -39,11 +37,15 @@ const PhoneNumberScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Können wir deine Telefonnummer bekommen?</Text>
+      <Text style={styles.title}>Can we get your phone number?</Text>
 
       <View style={styles.inputContainer}>
+        {/* Séparation entre le texte et le picker */}
+        <View style={styles.countryLabelContainer}>
+          <Text style={styles.label}>Country</Text>
+        </View>
+
         <View style={styles.countryCodeContainer}>
-          <Text style={styles.label}>Land</Text>
           <Picker
             selectedValue={countryCode}
             style={styles.countryCodePicker}
@@ -62,27 +64,28 @@ const PhoneNumberScreen = () => {
             )}
           </Picker>
         </View>
+      </View>
 
-        <View style={styles.phoneNumberContainer}>
-          <Text style={styles.label}>Telefonnummer</Text>
-          <TextInput
-            style={styles.phoneNumberInput}
-            placeholder="123456789"
-            keyboardType="phone-pad"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-          />
-        </View>
+      {/* Champ de saisie du numéro de téléphone sur une autre ligne */}
+      <View style={styles.phoneNumberContainer}>
+        <Text style={styles.label}>Phone number</Text>
+        <TextInput
+          style={styles.phoneNumberInput}
+          placeholder="123456789"
+          keyboardType="phone-pad"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+        />
       </View>
 
       <Text style={styles.infoText}>
-        Wir senden oft einen Code per SMS, um zu bestätigen, dass du wirklich du
-        bist. Für Nachrichten und Daten fallen ggf. Gebühren an. Was passiert,
-        wenn sich deine Telefonnummer ändert?
+        We often send a code by SMS to confirm that you really are you.
+        Fees may apply for messages and data. What happens if your phone number changes?
       </Text>
+
       <Link href="/welcome" asChild>
         <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Weiter</Text>
+          <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
       </Link>
     </View>
@@ -93,57 +96,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8F9FA", // Fond doux
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 30,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 20,
     textAlign: "center",
   },
   inputContainer: {
-    flexDirection: "row",
-    marginBottom: 30,
+    width: "100%",
+    marginBottom: 20,
+  },
+  countryLabelContainer: {
+    marginBottom:5, // Ajoute un espacement entre le texte "Country" et le picker
   },
   countryCodeContainer: {
-    flex: 1,
-    marginRight: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    overflow: "hidden", // Pour arrondir les coins du picker
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
   },
   phoneNumberContainer: {
-    flex: 2,
+    marginBottom: 5,
   },
   label: {
     marginBottom: 8,
+    fontSize: 16,
     color: "#666",
+    fontWeight: "500",
   },
   countryCodePicker: {
     height: 50,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
   },
   phoneNumberInput: {
+    width: 370,
     height: 50,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
+    borderColor: "#ddd",
+    borderRadius: 8,
     paddingHorizontal: 15,
+    backgroundColor: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
   infoText: {
     color: "#666",
+    fontSize: 14,
     marginBottom: 30,
+    textAlign: "center",
     lineHeight: 20,
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 5,
+    backgroundColor: "#6200EE",
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: "center",
+    width: "100%",
+    maxWidth: 300, // Limiter la largeur du bouton
   },
   buttonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });
 

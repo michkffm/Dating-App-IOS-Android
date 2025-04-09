@@ -1,67 +1,86 @@
-import { View, Text, Button, TouchableOpacity } from 'react-native'
-import React from 'react'
-import {useRouter,Link} from 'expo-router'
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Link } from "expo-router";
 
 const About = () => {
-    const router = useRouter()
   return (
-    <View
-        style={{
-          flex:1,
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 15,
-        }}
-      >
-        {/* About Page Link */}
+    <View style={styles.container}>
+      <Text style={styles.title}>Register now</Text>
+      <Text style={styles.subtitle}>
+      choose a way to register :
+      </Text>
+
+      <View style={styles.buttonsContainer}>
         <Link href="/contact" asChild>
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.linkText}>Telefonnummer</Text>
+          <TouchableOpacity style={styles.primaryButton}>
+            <Text style={styles.primaryText}>Phone</Text>
           </TouchableOpacity>
         </Link>
 
-        {/* Contact Page Link */}
-        <Link href="/contact" asChild>
-          <TouchableOpacity style={styles.linkButtonSecondary}>
-            <Text style={styles.linkTextSecondary}>Email</Text>
+        <Link href="/email" asChild>
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryText}>Email</Text>
           </TouchableOpacity>
         </Link>
       </View>
-  )
-}
-const styles = {
-  linkButton: {
-    backgroundColor: "#6200EE", // Couleur principale
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25, // Coins arrondis
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // Ombre pour Android
-  },
-  linkText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    width:140
-  },
-  linkButtonSecondary: {
-    backgroundColor: "#6200EE",
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#6200EE",
-  },
-  linkTextSecondary: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    width:140,
-    paddingHorizontal: 40
-  },
+    </View>
+  );
 };
 
-export default About
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F4F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  buttonsContainer: {
+    width: "100%",
+    alignItems: "center",
+    gap: 20,
+  },
+  primaryButton: {
+    backgroundColor: "#6200EE",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    width: "80%",
+    alignItems: "center",
+    elevation: 4,
+  },
+  primaryText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: "#6200EE",
+    width: "80%",
+    alignItems: "center",
+  },
+  secondaryText: {
+    color: "#6200EE",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+});
+
+export default About;
