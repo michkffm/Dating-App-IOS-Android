@@ -5,7 +5,7 @@ import { setTimeout as wait } from "node:timers/promises";
 import { createHash } from "node:crypto";
 import { createApp } from "../app.mjs";
 import { openDb, verifyProductionDbUrl } from "../db.mjs";
-import { smtpAccountMail,brevoAccountMail,configureAccountMail } from "../account-mail.mjs";
+import { smtpAccountMail,brevoAccountMail,resendAccountMail,configureAccountMail } from "../account-mail.mjs";
 
 test("production requires certificate verification for PostgreSQL",()=>{
   const fixture="postgresql://fixture:test@database.example.invalid/heartpulse";
@@ -40,6 +40,29 @@ test("Brevo uses the fixed HTTPS endpoint and retains the code only in the link 
   assert.throws(()=>configureAccountMail({...credentials,brevoKey:credentials.apiKey,smtpUrl:"smtps://example.invalid"}));
   const offline=brevoAccountMail({...credentials,fetchFn:async()=>new Response("opaque",{status:429})});
   await assert.rejects(()=>offline.send({purpose:"reset",recipient:"recipient@example.invalid",token:bodyToken}),/not accepted/);
+});
+
+test("Resend sends plain account mail with a single recipient and refuses the test domain in production",async()=>{
+  const token="1".repeat(64), calls=[];
+  const settings={apiKey:"re_fixture_NotARealKey",from:"heartpulse@example.invalid",publicOrigin:"https://test.example.invalid",production:true};
+  const client=resendAccountMail({...settings,fetchFn:async (url,options)=>{
+    calls.push({url,options}); return new Response(null,{status:200});
+  }});
+  await client.send({purpose:"reset",recipient:"recipient@example.invalid",token});
+  assert.equal(calls.length,1);
+  const {url,options}=calls[0];
+  assert.equal(url,"https://api.resend.com/emails");
+  assert.equal(options.headers.Authorization,"Bearer "+settings.apiKey);
+  assert.equal(options.redirect,"error");
+  const message=JSON.parse(options.body);
+  assert.deepEqual(message.to,["recipient@example.invalid"]);
+  assert.equal(message.from,"HeartPulse <heartpulse@example.invalid>");
+  assert.ok(message.text.includes("https://test.example.invalid/live#reset="+token));
+  assert.ok(!message.text.includes(settings.apiKey)&&!message.html);
+  assert.throws(()=>resendAccountMail({...settings,from:"onboarding@resend.dev"}),/verified sender/);
+  assert.throws(()=>configureAccountMail({...settings,resendKey:settings.apiKey,brevoKey:"unused"}),/one account email transport/);
+  const unavailable=resendAccountMail({...settings,fetchFn:async()=>new Response("provider detail",{status:403})});
+  await assert.rejects(()=>unavailable.send({purpose:"verify",recipient:"recipient@example.invalid",token}),/not accepted by provider/);
 });
 
 test("account email confirmation, expiry, password reset, replay, session revocation", {timeout:45000}, async(t)=>{

@@ -13,14 +13,14 @@ if(!Number.isInteger(port)||port<1||port>65535) throw new Error("Invalid PORT");
 const localDir=resolve(env.HEARTPULSE_DB_DIR||".heartpulse-data/db");
 const renderOrigin=env.RENDER==="true"?env.RENDER_EXTERNAL_URL:undefined;
 const configured=env.APP_ORIGINS?env.APP_ORIGINS.split(",").map(x=>x.trim()):renderOrigin?[renderOrigin]:[];
-const accountMailOrigin=env.PUBLIC_APP_ORIGIN||((env.BREVO_API_KEY||env.SMTP_URL)?renderOrigin:undefined);
+const accountMailOrigin=env.PUBLIC_APP_ORIGIN||((env.RESEND_API_KEY||env.BREVO_API_KEY||env.SMTP_URL)?renderOrigin:undefined);
 for(const value of configured){
   const u=new URL(value);
   if(u.origin!==value || (production&&u.protocol!=="https:")) throw new Error("Invalid APP_ORIGINS");
 }
 if(production&&!configured.length) throw new Error("APP_ORIGINS required for production");
 if(production) verifyProductionDbUrl(env.DATABASE_URL);
-const accountMail=configureAccountMail({brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:accountMailOrigin,production});
+const accountMail=configureAccountMail({resendKey:env.RESEND_API_KEY,brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:accountMailOrigin,production});
 if(production && accountMailOrigin && !configured.includes(accountMailOrigin)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
 const wantsPublicSignup=env.REGISTRATION_ENABLED==="true";
 const registrationAllowlist=(env.REGISTRATION_TEST_EMAILS||"").split(",").map(x=>x.trim()).filter(Boolean);
@@ -32,7 +32,7 @@ if(!env.DATABASE_URL) await mkdir(dirname(localDir),{recursive:true,mode:0o700})
 const db=await openDb({url:env.DATABASE_URL,dir:localDir});
 const media=cloudMedia({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,apiSecret:env.CLOUDINARY_API_SECRET});
 const app=createApp({
-  db, media, accountMail, production, dailyMailLimit:Number(env.ACCOUNT_MAIL_DAILY_LIMIT||100),
+  db, media, accountMail, production, dailyMailLimit:env.RESEND_API_KEY?Math.min(90,Number(env.ACCOUNT_MAIL_DAILY_LIMIT||50)):Number(env.ACCOUNT_MAIL_DAILY_LIMIT||100),
   origins:[...configured,...(production?[]:["http://127.0.0.1:"+port,"http://localhost:"+port])],
   registration:production?wantsPublicSignup:env.REGISTRATION_ENABLED!=="false",
   registrationAllowlist,

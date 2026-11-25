@@ -37,3 +37,7 @@ continuous responsiveness cannot be promised at 0 €.
    before inviting real users. Digital distribution through native app stores is not included.
 
 No external provider was created or tested by this configuration alone.
+
+### Using an existing Resend sending domain
+
+If your team already has a verified [Resend sending domain](https://resend.com/docs/dashboard/domains/introduction), use a dedicated HeartPulse sender address on that domain in `MAIL_FROM`, and a sending-only key scoped to the domain if available, stored in `RESEND_API_KEY`. Leave `BREVO_API_KEY` and `SMTP_URL` unset. Do not transfer or reconfigure a domain used by other apps. The production server rejects the `resend.dev` test sender. Keep any account-wide billing and DNS settings as they are, confirm remaining shared quota, and verify with explicitly approved pilot inboxes before public signup.

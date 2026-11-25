@@ -53,8 +53,29 @@ export function brevoAccountMail({apiKey,from,publicOrigin,production=false,fetc
   };
 }
 
+export function resendAccountMail({apiKey,from,publicOrigin,production=false,fetchFn=fetch}){
+  if(typeof apiKey!=="string"||!/^re_[A-Za-z0-9_-]{8,200}$/.test(apiKey)) throw new Error("Invalid Resend credential configuration");
+  const makeMessage=messageBuilder(from,publicOrigin,production);
+  if(production&&from.toLowerCase().endsWith("@resend.dev")) throw new Error("Configure a verified sender domain for production");
+  return {
+    async send(options){
+      const message=makeMessage(options);
+      const response=await fetchFn("https://api.resend.com/emails",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json","Authorization":"Bearer "+apiKey},
+        body:JSON.stringify({from:"HeartPulse <"+message.from+">",to:[message.to],subject:message.subject,text:message.text}),
+        redirect:"error",
+        signal:AbortSignal.timeout(10000)
+      });
+      if(response.body) await response.body.cancel().catch(()=>{});
+      if(!response.ok) throw new Error("Account email not accepted by provider");
+    }
+  };
+}
+
 export function configureAccountMail(options){
-  if(options.brevoKey && options.smtpUrl) throw new Error("Configure one account email transport");
+  if([options.resendKey,options.brevoKey,options.smtpUrl].filter(Boolean).length>1) throw new Error("Configure one account email transport");
+  if(options.resendKey) return resendAccountMail({...options,apiKey:options.resendKey});
   if(options.brevoKey) return brevoAccountMail({...options,apiKey:options.brevoKey});
   return smtpAccountMail(options);
 }
