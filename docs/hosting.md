@@ -41,11 +41,3 @@ The Blueprint does not provision or modify the external providers.
 ### Using an existing Resend sending domain
 
 If your team already has a verified [Resend sending domain](https://resend.com/docs/dashboard/domains/introduction), use a dedicated HeartPulse sender address on that domain in `MAIL_FROM`, and a sending-only key scoped to the domain if available, stored in `RESEND_API_KEY`. Leave `BREVO_API_KEY` and `SMTP_URL` unset. Do not transfer or reconfigure a domain used by other apps. The production server rejects the `resend.dev` test sender. Keep any account-wide billing and DNS settings as they are, confirm remaining shared quota, and verify with explicitly approved pilot inboxes before public signup.
-
-
-### Privacy and moderation
-
-- Public profile responses omit email addresses, dates of birth and credentials. Photos are re-encoded without metadata, with an access check before server-side cloud delivery. Account deletion queues provider-side photo removal.
-- Web sessions use host-only Secure, HttpOnly cookies with SameSite enabled. Confirmation and reset tokens are hashed and expire. A password reset invalidates old sessions.
-- Authorized operators can review reports from the server directory with `npm run moderate -- queue` and record a decision with `dismiss REPORT_ID` or `suspend REPORT_ID --confirm`. There is no public moderation API. Never paste report output into GitHub issues, public logs, or chat.
-- Store credentials only in protected service configuration. Disable previously exposed keys at the provider rather than relying on their removal from current code.

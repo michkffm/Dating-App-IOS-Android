@@ -1,25 +1,38 @@
 # HeartPulse
 
-[Open HeartPulse](https://heartpulse.onrender.com) · [Deutsch](README.md) · [GitHub](https://github.com/michkffm/Dating-App-IOS-Android)
+**A dating app with mutual matches and private conversations.**
 
-HeartPulse is a dating app for iOS, Android and the web. It combines an Expo frontend, a Node.js API and PostgreSQL. Features include account registration, sign-in, profiles, likes, mutual matches, chat, reporting, blocking and account deletion. A server-side Cloudinary adapter handles photos.
+[Open the web app](https://heartpulse.onrender.com) · [Deutsch](README.md)
 
 ## Live web app
 
-[![The hosted HeartPulse sign-in page](docs/heartpulse-login.png)](https://heartpulse.onrender.com)
+[![The live HeartPulse sign-in screen](docs/heartpulse-login.png)](https://heartpulse.onrender.com)
 
-The sign-in page is publicly accessible. New account registration is currently closed.
+## Features
 
-## Collaborative Project
+- Discover profiles, express interest, and match when the interest is mutual
+- Chat privately with matches
+- Manage your profile and photo, and block or report other accounts
+- Verify your email, reset your password, and delete your account
+
+## Collaborative project
 
 **Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and I worked together on HeartPulse.
 
 [![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
 [![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
 
-## Local development
+## Stack
 
-Use Node.js 24.3 or later within the 24.x series, and npm.
+| Area | Stack |
+| --- | --- |
+| Frontend | React Native, Expo, and Expo Router |
+| Backend | Node.js and PostgreSQL |
+| Hosting and services | Render, Neon, Cloudinary, and Resend |
+
+## Run locally
+
+Use Node.js 24.3 or later within the 24.x series, and npm. Local development uses embedded PostgreSQL and does not require production credentials.
 
 ```sh
 cd DatingApp
@@ -30,16 +43,14 @@ npm ci
 HEARTPULSE_WEB_DIR=../DatingApp/dist npm start
 ```
 
-Visit `http://127.0.0.1:3407`. This isolates the API and web frontend on one origin with persistent embedded PostgreSQL. Use only fictional accounts in development. Native clients require a compatible Expo development build and an API origin configured through `EXPO_PUBLIC_API_ORIGIN`.
+Open [localhost:3407](http://127.0.0.1:3407). Run the tests from the repository root:
 
 ```sh
 (cd DatingApp && npm test)
 (cd server && npm test)
 ```
 
-## Technical documentation
-
-[Hosting, privacy, and operations](docs/hosting.md)
+[Technical documentation for hosting and operations](docs/hosting.md)
 
 ## Author
 
