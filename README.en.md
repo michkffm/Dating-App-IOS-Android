@@ -1,6 +1,6 @@
 # HeartPulse
 
-**A dating app with mutual matches and private conversations.**
+**A dating app for web, Android, and iOS with mutual matches and private chats.**
 
 [Open the web app](https://heartpulse.onrender.com) · [Deutsch](README.md)
 

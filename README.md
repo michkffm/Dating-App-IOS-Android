@@ -1,6 +1,6 @@
 # HeartPulse
 
-**Eine Dating-App mit gegenseitigen Matches und privaten Chats.**
+**Eine Dating-App für Web, Android und iOS mit gegenseitigen Matches und privaten Chats.**
 
 [Web-App öffnen](https://heartpulse.onrender.com) · [English](README.en.md)
 
