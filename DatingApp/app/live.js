@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -6,6 +6,7 @@ import { File } from "expo-file-system";
 import { Button, styles } from "../src/experience";
 import { api, ApiError, apiOrigin, LIVE_ENABLED } from "../src/live-api";
 import { Field, LiveScreen, Person } from "../src/live-controls";
+import { isAccountToken, subscribeToAccountLinks } from "../src/account-actions.cjs";
 
 const emptyAccount = { email: "", password: "", nickname: "", birthdate: "" };
 const editing = (user) => ({ nickname: user.nickname, bio: user.bio || "" });
@@ -17,6 +18,7 @@ export default function Live() {
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [mediaReady, setMediaReady] = useState(false);
+  const [accountEmail, setAccountEmail] = useState(false);
   const [phase, setPhase] = useState("starting");
   const [pane, setPane] = useState("discover");
   const [account, setAccount] = useState(emptyAccount);
@@ -33,6 +35,12 @@ export default function Live() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+  const initialAction = useRef(null);
+  const emailCapability = useRef(undefined);
+  const actionRevision = useRef(0);
+  const [linkToken, setLinkToken] = useState("");
+  const [typedToken, setTypedToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const token = session?.token;
 
   function resetSession() {
@@ -49,6 +57,7 @@ export default function Live() {
     setReason("");
     setAccount(emptyAccount);
     setDeletePassword("");
+    clearAccountAction();
   }
 
   function beginSession(user, nextToken) {
@@ -56,7 +65,41 @@ export default function Live() {
     setProfile(editing(user));
     setPhase("account");
     setAccount(emptyAccount);
+    clearAccountAction();
   }
+
+  function clearAccountAction() {
+    if (initialAction.current) initialAction.current = null;
+    setLinkToken("");
+    setTypedToken("");
+    setNewPassword("");
+  }
+
+  function changeAuth(next) {
+    clearAccountAction();
+    setError("");
+    setNotice("");
+    setPhase(next);
+    setAccount((current) => ({ ...emptyAccount, email: current.email }));
+  }
+
+  function showAccountLink(entry) {
+    actionRevision.current++;
+    resetSession();
+    setLinkToken(entry.token);
+    setError(entry.token ? "" : "Der Link ist nicht vollständig. Bitte geben Sie den Code ein oder fordern Sie einen neuen Link an.");
+    setNotice("");
+    setPhase(entry.kind);
+  }
+
+  // The web entry consumes link fragments before Expo Router sees them.
+  useLayoutEffect(() => {
+    if (Platform.OS !== "web") return;
+    return subscribeToAccountLinks((entry) => {
+      if (emailCapability.current === true) showAccountLink(entry);
+      else if (emailCapability.current === undefined) initialAction.current = entry;
+    });
+  }, []);
 
   useEffect(() => {
     if (!LIVE_ENABLED || apiOrigin() === null) return;
@@ -67,10 +110,19 @@ export default function Live() {
         const health = await api("/api/health", { signal });
         if (signal.aborted) return;
         setMediaReady(health.media === true || ["ready", "configured", "available", "cloudinary"].includes(health.media));
+        emailCapability.current = health.accountEmail === true;
+        setAccountEmail(emailCapability.current);
+        const entry = initialAction.current;
+        initialAction.current = null;
+        if (entry && emailCapability.current) {
+          showAccountLink(entry);
+          return;
+        }
         const { user } = await api("/api/me", { signal });
-        if (!signal.aborted) beginSession(user);
+        if (!signal.aborted && actionRevision.current === 0) beginSession(user);
       } catch (e) {
-        if (signal.aborted) return;
+        if (signal.aborted || actionRevision.current !== 0) return;
+        initialAction.current = null;
         if (e.status !== 401) setError(e.message);
         setPhase("login");
       }
@@ -154,11 +206,64 @@ export default function Live() {
     return run(async () => {
       const { email, password, nickname, birthdate } = account;
       const payload = register ? { email: email.trim(), password, nickname: nickname.trim(), birthdate: birthdate.trim() } : { email: email.trim(), password };
-      const result = await api(register ? "/api/register" : "/api/login", { method: "POST", data: payload });
+      let result;
+      try {
+        result = await api(register ? "/api/register" : "/api/login", { method: "POST", data: payload });
+      } catch (e) {
+        if (!register && accountEmail && e.status === 403) {
+          changeAuth("check-email");
+          setNotice("Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.");
+          return;
+        }
+        throw e;
+      }
+      if (register && result.verificationRequired === true) {
+        emailCapability.current = true;
+        setAccountEmail(true);
+        changeAuth("check-email");
+        return;
+      }
       if (!result.user || (Platform.OS !== "web" && !result.token)) {
         throw new ApiError(0, "Der Server hat keine Sitzung eingerichtet.");
       }
       beginSession(result.user, result.token);
+    }, { auth: false });
+  }
+
+  function requestAccountMail(kind) {
+    const verification = kind === "verify";
+    return run(async () => {
+      await api(verification ? "/api/resend-verification" : "/api/forgot-password", {
+        method: "POST", data: { email: account.email.trim() },
+      });
+      setNotice(verification
+        ? "Wenn eine Bestätigung aussteht, erhalten Sie einen neuen Link per E-Mail."
+        : "Wenn diese Adresse zu einem Konto gehört, erhalten Sie einen Link per E-Mail.");
+    }, { auth: false });
+  }
+
+  function submitAccountAction(kind) {
+    const value = linkToken || typedToken.trim();
+    if (!isAccountToken(value)) return;
+    return run(async () => {
+      const verification = kind === "verify";
+      try {
+        await api(verification ? "/api/verify-email" : "/api/reset-password", {
+          method: "POST",
+          data: verification ? { token: value.toLowerCase() } : { token: value.toLowerCase(), password: newPassword },
+        });
+      } catch (e) {
+        if ([400, 404, 410, 422].includes(e.status)) {
+          setLinkToken("");
+          setTypedToken("");
+          throw new ApiError(e.status, "Der Link oder Code ist ungültig oder abgelaufen. Sie können einen neuen anfordern.");
+        }
+        throw e;
+      }
+      changeAuth("login");
+      setNotice(verification
+        ? "Ihre E-Mail-Adresse wurde bestätigt. Sie können sich jetzt anmelden."
+        : "Ihr Passwort wurde geändert. Melden Sie sich mit dem neuen Passwort an.");
     }, { auth: false });
   }
 
@@ -253,10 +358,55 @@ export default function Live() {
   );
   if (phase === "starting") return <LiveScreen busy>{heading("HeartPulse")}</LiveScreen>;
   if (!session) {
+    const mailPhase = phase === "check-email" || phase === "forgot";
+    const actionPhase = phase === "verify" || phase === "reset";
+    if (accountEmail && mailPhase) {
+      const verification = phase === "check-email";
+      return (
+        <LiveScreen busy={busy} error={error} notice={notice}>
+          {heading(verification ? "E-Mail-Adresse bestätigen" : "Passwort vergessen")}
+          <View style={styles.card}>
+            {body(verification
+              ? "Öffnen Sie den Link in Ihrem Postfach. Sehen Sie bei Bedarf auch im Spamordner nach."
+              : "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen anzufordern.")}
+            <Field label="E-Mail-Adresse" value={account.email} onChangeText={(email) => setAccount((current) => ({ ...current, email }))}
+              keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
+            <Button label={verification ? "Bestätigungslink erneut senden" : "Link zum Zurücksetzen anfordern"} disabled={busy || !account.email.trim()}
+              onPress={() => requestAccountMail(verification ? "verify" : "reset")} />
+            <Button label="Code eingeben" secondary disabled={busy} onPress={() => changeAuth(verification ? "verify" : "reset")} />
+            <Button label="Zum Login" secondary disabled={busy} onPress={() => changeAuth("login")} />
+          </View>
+        </LiveScreen>
+      );
+    }
+    if (accountEmail && actionPhase) {
+      const verification = phase === "verify";
+      return (
+        <LiveScreen busy={busy} error={error} notice={notice}>
+          {heading(verification ? "E-Mail-Bestätigung abschließen" : "Neues Passwort setzen")}
+          <View style={styles.card}>
+            {linkToken ? body("Der Code aus dem Link ist bereit.") : (
+              <>
+                {body("Öffnen Sie den Link aus der E-Mail im Browser oder kopieren Sie den 64-stelligen Code nach dem Gleichheitszeichen aus dem Link.")}
+                <Field label="Code aus dem Link" value={typedToken} onChangeText={setTypedToken}
+                  autoCapitalize="none" autoComplete="off" autoCorrect={false} secureTextEntry maxLength={64} />
+              </>
+            )}
+            {!verification && <Field label="Neues Passwort (mindestens 12 Zeichen)" value={newPassword}
+              onChangeText={setNewPassword} secureTextEntry autoComplete="new-password" maxLength={128} />}
+            <Button label={verification ? "E-Mail-Adresse jetzt bestätigen" : "Neues Passwort speichern"}
+              disabled={busy || !isAccountToken(linkToken || typedToken.trim()) || (!verification && newPassword.length < 12)}
+              onPress={() => submitAccountAction(phase)} />
+            <Button label="Neuen Link anfordern" secondary disabled={busy} onPress={() => changeAuth(verification ? "check-email" : "forgot")} />
+            <Button label="Zum Login" secondary disabled={busy} onPress={() => changeAuth("login")} />
+          </View>
+        </LiveScreen>
+      );
+    }
     const register = phase === "register";
     const on = (key) => (value) => setAccount((current) => ({ ...current, [key]: value }));
     const canSubmit = !!account.email.trim() && !!account.password && (!register
-      || !!(account.nickname.trim() && /^\d{4}-\d{2}-\d{2}$/.test(account.birthdate.trim())));
+      || !!(account.password.length >= 12 && account.nickname.trim() && /^\d{4}-\d{2}-\d{2}$/.test(account.birthdate.trim())));
     return (
       <LiveScreen busy={busy} error={error} notice={notice}>
         {heading(register ? "Konto erstellen" : "Bei HeartPulse anmelden")}
@@ -264,15 +414,17 @@ export default function Live() {
           <Field label="E-Mail-Adresse" value={account.email} onChangeText={on("email")} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
           <Field label="Passwort" value={account.password} onChangeText={on("password")} autoCapitalize="none" secureTextEntry autoComplete={register ? "new-password" : "current-password"} maxLength={128} />
           {register && <>
+            {body("Wählen Sie ein Passwort mit mindestens 12 Zeichen.")}
             <Field label="Spitzname" value={account.nickname} onChangeText={on("nickname")} maxLength={24} />
             <Field label="Geburtsdatum (JJJJ-MM-TT)" value={account.birthdate} onChangeText={on("birthdate")} maxLength={10} placeholder="1998-04-23" />
             {body("HeartPulse ist ab 18. Im Profil erscheint nur Ihr Alter, nicht Ihr Geburtsdatum.")}
           </>}
           <Button label={register ? "Registrieren" : "Anmelden"} disabled={busy || !canSubmit} onPress={submitAuth} />
-          <Button label={register ? "Zum Login" : "Konto erstellen"} secondary disabled={busy} onPress={() => {
-            setError(""); setNotice(""); setPhase(register ? "login" : "register");
-            setAccount((current) => ({ ...current, password: "" }));
-          }} />
+          <Button label={register ? "Zum Login" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />
+          {accountEmail && !register && <>
+            <Button label="Passwort vergessen" secondary disabled={busy} onPress={() => changeAuth("forgot")} />
+            <Button label="E-Mail-Bestätigung öffnen" secondary disabled={busy} onPress={() => changeAuth("check-email")} />
+          </>}
         </View>
       </LiveScreen>
     );
