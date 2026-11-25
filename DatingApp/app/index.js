@@ -1,73 +1,22 @@
 import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import { NavigationContainer } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons"; // ou 'react-native-vector-icons/Ionicons'
-
-import Home from "./screens/HomeScreen";
-import Product from "./screens/ProductScreen";
-import Settings from "./screens/SettingsScreen";
-import { CartProvider } from "./CartContext";
-import CartScreen from "./card";
-
-const Drawer = createDrawerNavigator();
+import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Button, Screen, styles, colors } from "../src/experience";
 
 export default function Index() {
+  const router = useRouter();
   return (
-     <CartProvider>
-       <Drawer.Navigator
-        initialRouteName="HeartPulse"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: "#6200EE",
-          },
-          headerTintColor: "#fff",
-          headerTitleStyle: {
-            fontWeight: "bold",
-            fontSize: 22,
-          },
-          drawerStyle: {
-            backgroundColor: "#F8F9FA",
-            width: 260,
-          },
-          drawerActiveTintColor: "#6200EE",
-          drawerInactiveTintColor: "#333",
-          drawerLabelStyle: {
-            fontSize: 18,
-            marginLeft: -10,
-          },
-        }}
-      >
-        <Drawer.Screen
-          name="HeartPulse"
-          component={Home}
-          options={{
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="home-outline" size={size} color={color} />
-            ),
-            title: "HeartPulse",
-          }}
-        />
-        <Drawer.Screen
-          name="Product"
-          component={Product}
-          options={{
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="pricetags-outline" size={size} color={color} />
-            ),
-            title: "Products",
-          }}
-        />
-        <Drawer.Screen
-          name="Settings"
-          component={Settings}
-          options={{
-            drawerIcon: ({ color, size }) => (
-              <Ionicons name="settings-outline" size={size} color={color} />
-            ),
-            title: "Settings",
-          }}
-        />
-      </Drawer.Navigator>
-     </CartProvider>
+    <Screen>
+      <View style={styles.card}>
+        <Ionicons name="heart" size={52} color={colors.pink} accessible={false} />
+        <Text style={styles.kicker}>LOKALE DEMO</Text>
+        <Text accessibilityRole="header" style={styles.title}>HeartPulse</Text>
+        <Text style={styles.body}>Entdecken Sie Beispielprofile und erleben Sie, wie Likes und Matches funktionieren.</Text>
+      </View>
+      <Button label="Demo starten" onPress={() => router.push("/home")} />
+      <Button label="Demo-Profil anlegen" secondary onPress={() => router.push("/welcome")} />
+      <Text style={styles.body}>Keine echten Profile, keine Anmeldung und keine Fotos oder Zahlungen.</Text>
+    </Screen>
   );
 }
