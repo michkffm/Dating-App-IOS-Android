@@ -9,6 +9,7 @@
 !DatingApp/package.json
 !DatingApp/package-lock.json
 !DatingApp/app.json
+!DatingApp/index.js
 !DatingApp/tsconfig.json
 !DatingApp/babel.config.js
 !DatingApp/metro.config.js
