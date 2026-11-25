@@ -1,13 +1,14 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { Landing } from "../src/landing";
 import { LIVE_ENABLED } from "../src/live-api";
 import { Button, Screen, styles, colors } from "../src/experience";
 
 export default function Index() {
   const router = useRouter();
-  if (LIVE_ENABLED) return <Redirect href="/live" />;
+  if (LIVE_ENABLED) return <Landing />;
   return (
     <Screen>
       <View style={styles.card}>

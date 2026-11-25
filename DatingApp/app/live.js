@@ -1,21 +1,23 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AppState, Platform, Text, View } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { Button, styles } from "../src/experience";
 import { api, ApiError, apiOrigin, LIVE_ENABLED } from "../src/live-api";
-import { Field, LiveScreen, Person } from "../src/live-controls";
+import { AccountLinks, AuthHeading, EmptyState, Field, LiveNavigation, LiveScreen, Message, Person, TextAction } from "../src/live-controls";
 import { isAccountToken, subscribeToAccountLinks } from "../src/account-actions.cjs";
 
 const emptyAccount = { email: "", password: "", nickname: "", birthdate: "" };
 const editing = (user) => ({ nickname: user.nickname, bio: user.bio || "" });
 const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxImageBytes = 5 * 1024 * 1024;
-const tabs = [["discover", "Entdecken"], ["matches", "Matches"], ["profile", "Mein Profil"]];
+const tabs = [["discover", "Entdecken", "compass-outline"], ["matches", "Matches", "heart-outline"], ["profile", "Mein Profil", "person-outline"]];
 
 export default function Live() {
   const router = useRouter();
+  const { mode } = useLocalSearchParams();
+  const registerOnEntry = useRef(mode === "register");
   const [session, setSession] = useState(null);
   const [mediaReady, setMediaReady] = useState(false);
   const [accountEmail, setAccountEmail] = useState(false);
@@ -108,10 +110,12 @@ export default function Live() {
     const controller = new AbortController();
     const { signal } = controller;
     async function init() {
+      let allowRegistration = false;
       try {
         const health = await api("/api/health", { signal });
+        allowRegistration = health.registration === true || health.registrationPilot === true;
         if (!signal.aborted) {
-          setRegistrationOpen(health.registration !== false);
+          setRegistrationOpen(health.registration === true);
           setRegistrationPilot(health.registrationPilot === true);
         }
         if (signal.aborted) return;
@@ -130,7 +134,7 @@ export default function Live() {
         if (signal.aborted || actionRevision.current !== 0) return;
         initialAction.current = null;
         if (e.status !== 401) setError(e.message);
-        setPhase("login");
+        setPhase(registerOnEntry.current && allowRegistration && e.status === 401 ? "register" : "login");
       }
     }
     init();
@@ -381,7 +385,7 @@ export default function Live() {
       const verification = phase === "check-email";
       return (
         <LiveScreen busy={busy} error={error} notice={notice}>
-          {heading(verification ? "E-Mail-Adresse bestätigen" : "Passwort vergessen")}
+          <AuthHeading title={verification ? "E-Mail-Adresse bestätigen" : "Passwort vergessen"} />
           <View style={styles.card}>
             {body(verification
               ? "Öffnen Sie den Link in Ihrem Postfach. Sehen Sie bei Bedarf auch im Spamordner nach."
@@ -400,7 +404,7 @@ export default function Live() {
       const verification = phase === "verify";
       return (
         <LiveScreen busy={busy} error={error} notice={notice}>
-          {heading(verification ? "E-Mail-Bestätigung abschließen" : "Neues Passwort setzen")}
+          <AuthHeading title={verification ? "E-Mail-Bestätigung abschließen" : "Neues Passwort setzen"} />
           <View style={styles.card}>
             {linkToken ? body("Der Code aus dem Link ist bereit.") : (
               <>
@@ -426,7 +430,7 @@ export default function Live() {
       || !!(account.password.length >= 12 && account.nickname.trim() && /^\d{4}-\d{2}-\d{2}$/.test(account.birthdate.trim())));
     return (
       <LiveScreen busy={busy} error={error} notice={notice}>
-        {heading(register ? "Konto erstellen" : "Bei HeartPulse anmelden")}
+        <AuthHeading title={register ? "Konto erstellen" : "Bei HeartPulse anmelden"} />
         <View style={styles.card}>
           <Field label="E-Mail-Adresse" value={account.email} onChangeText={on("email")} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
           <Field label="Passwort" value={account.password} onChangeText={on("password")} autoCapitalize="none" secureTextEntry autoComplete={register ? "new-password" : "current-password"} maxLength={128} />
@@ -439,10 +443,9 @@ export default function Live() {
           <Button label={register ? "Registrieren" : "Anmelden"} disabled={busy || !canSubmit} onPress={submitAuth} />
           {(register || registrationOpen || registrationPilot) && <Button label={register ? "Zum Login" : registrationPilot ? "Eingeladenes Konto erstellen" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />}
           {!register && !registrationOpen && body(registrationPilot ? "Die Registrierung ist derzeit nur für eingeladene Konten geöffnet." : "Die öffentliche Registrierung ist derzeit geschlossen.")}
-          {accountEmail && !register && <>
-            <Button label="Passwort vergessen" secondary disabled={busy} onPress={() => changeAuth("forgot")} />
-            <Button label="E-Mail-Bestätigung öffnen" secondary disabled={busy} onPress={() => changeAuth("check-email")} />
-          </>}
+          {accountEmail && !register && <AccountLinks>
+            <TextAction label="Passwort vergessen" disabled={busy} onPress={() => changeAuth("forgot")} />
+          </AccountLinks>}
         </View>
       </LiveScreen>
     );
@@ -451,9 +454,7 @@ export default function Live() {
   const person = people[0];
   return (
     <LiveScreen busy={busy} error={error} notice={notice}>
-      <View accessibilityLabel="HeartPulse Navigation" style={styles.row}>
-        {tabs.map(([key, label]) => <Button key={key} label={label} disabled={busy} secondary={pane !== key && !(key === "matches" && pane === "chat")} onPress={() => openTab(key)} />)}
-      </View>
+      <LiveNavigation tabs={tabs} pane={pane} busy={busy} onSelect={openTab} />
       {!!confirm && (
         <View style={styles.card}>
           <Text accessibilityRole="header" style={styles.heading}>
@@ -477,22 +478,24 @@ export default function Live() {
           <Button label="Gefällt mir" disabled={busy || !!confirm} onPress={() => decide(person, "like")} />
           <Button label="Überspringen" secondary disabled={busy || !!confirm} onPress={() => decide(person, "pass")} />
           {!confirm && actions(person)}
-        </Person> : body("Gerade keine weiteren Profile. Tippen Sie auf Entdecken, um die Liste zu aktualisieren.")}
+        </Person> : <EmptyState icon="compass-outline" title="Gerade keine weiteren Profile" detail="Schauen Sie später wieder vorbei.">
+          <Button label="Profile aktualisieren" secondary disabled={busy} onPress={() => openTab("discover")} />
+        </EmptyState>}
       </>}
       {pane === "matches" && <>
         {heading("Matches")}
-        {matches.length === 0 ? body("Noch keine Matches.") : matches.map((item) => <Person key={item.id} person={item.user} token={token} showImage={false}>
+        {matches.length === 0 ? <EmptyState icon="heart-outline" title="Noch keine Matches" detail="Ein Match entsteht, wenn Sie sich gegenseitig liken.">
+          <Button label="Profile entdecken" secondary disabled={busy} onPress={() => openTab("discover")} />
+        </EmptyState> : matches.map((item) => <Person key={item.id} person={item.user} token={token} showImage={false}>
           <Button label={"Chat mit " + item.user.nickname} disabled={busy || !!confirm} onPress={() => openChat(item)} />
         </Person>)}
       </>}
       {pane === "chat" && match && <>
         {heading("Chat mit " + match.user.nickname)}
         {messages.length === 0 ? body("Noch keine Nachrichten.") : messages.map((message) => (
-          <View key={message.id} style={styles.card}>
-            <Text style={styles.kicker}>{message.senderId === session.user.id ? "Sie" : match.user.nickname}</Text>
-            {body(message.body)}
-            {Number.isNaN(Date.parse(message.createdAt)) ? null : body(new Date(message.createdAt).toLocaleString("de-DE"))}
-          </View>
+          <Message key={message.id} message={message.body} own={message.senderId === session.user.id}
+            sender={message.senderId === session.user.id ? "Sie" : match.user.nickname}
+            timestamp={Number.isNaN(Date.parse(message.createdAt)) ? null : new Date(message.createdAt).toLocaleString("de-DE")} />
         ))}
         <View style={styles.card}>
           <Field label="Nachricht" multiline value={draft} onChangeText={setDraft} maxLength={1000} />

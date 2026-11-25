@@ -6,7 +6,7 @@
 
 ## Live-Web-App
 
-[![Die veröffentlichte HeartPulse-Anmeldeseite](docs/heartpulse-login.png)](https://heartpulse.onrender.com)
+[![Startseite von HeartPulse](docs/heartpulse-start.png)](https://heartpulse.onrender.com)
 
 ## Funktionen
 

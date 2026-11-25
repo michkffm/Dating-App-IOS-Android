@@ -48,7 +48,7 @@ async function main() {
       const data = () => request.postDataJSON();
       const json = (body, status = 200) => route.fulfill({ status, json: body });
       switch (key) {
-        case "GET /api/health": return json({ status: "ok", media: false, accountEmail: true });
+        case "GET /api/health": return json({ status: "ok", media: false, accountEmail: true, registration: true });
         case "GET /api/me": return loggedIn ? json({ user: person }) : json({}, 401);
         case "POST /api/register":
           assert.equal(data().email, email); assert.equal(data().password, initial);
@@ -108,14 +108,14 @@ async function main() {
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Der Link oder Code ist ungültig oder abgelaufen. Sie können einen neuen anfordern.");
 
-    await emailLink("verify", verify, "E-Mail-Bestätigung abschließen");
-    assert.equal(observed.filter(v => v === "POST /api/verify-email").length, 1);
+    await button("Neuen Link anfordern").click();
+    await button("Code eingeben").click();
+    await fill("Code aus dem Link", manual);
     await fill("Passwort aus der Registrierung", initial);
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Ihre E-Mail-Adresse wurde bestätigt. Sie können sich jetzt anmelden.");
-    await button("E-Mail-Bestätigung öffnen").click();
-    await button("Code eingeben").click();
-    await fill("Code aus dem Link", manual);
+    assert.equal(await button("E-Mail-Bestätigung öffnen").count(), 0);
+    await emailLink("verify", verify, "E-Mail-Bestätigung abschließen");
     await fill("Passwort aus der Registrierung", initial);
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Ihre E-Mail-Adresse wurde bestätigt. Sie können sich jetzt anmelden.");

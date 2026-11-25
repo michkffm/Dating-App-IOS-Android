@@ -49,12 +49,12 @@ export function DemoProvider({ children }) {
 }
 export const useDemo = () => useContext(Context);
 
-export function Screen({ children }) {
+export function Screen({ children, contentStyle }) {
   const { ready, notice } = useDemo();
   return (
     <SafeAreaView edges={["left", "right", "bottom"]} style={styles.screen}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.outer}>
-        <View style={styles.content}>
+        <View style={[styles.content, contentStyle]}>
           {notice ? <Text accessibilityRole="alert" style={styles.alert}>{notice}</Text> : null}
           {ready ? children : <ActivityIndicator color={colors.purple} accessibilityLabel="Lade Demo" />}
         </View>
