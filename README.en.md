@@ -32,11 +32,9 @@ Not publicly deployed. Account email verification, password recovery, and modera
 
 Set `SMTP_URL`, `MAIL_FROM`, and `PUBLIC_APP_ORIGIN` for account email. Production requires HTTPS for account links and TLS for SMTP. Password recovery revokes existing sessions. Authorized operators can run `npm run moderate -- queue` from the server directory; report data is private and should not be copied to public logs or issues.
 
-## Development and Design
+## Author
 
 **Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and **Michael Koch** worked together on HeartPulse.
 
 [![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
 [![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
-
-Michael Koch · [GitHub](https://github.com/michkffm) · [Portfolio](https://michael-koch-portfolio.vercel.app/)
