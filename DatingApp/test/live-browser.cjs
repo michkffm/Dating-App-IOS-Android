@@ -80,7 +80,7 @@ const root = path.resolve(process.argv[2]);
     const loc=(name)=>page.getByLabel(name,{exact:true});
     const shown=(value)=>page.getByText(value,{exact:true}).first().waitFor();
     await page.goto(base);
-    await page.getByRole("heading",{name:"Vom ersten Like zum Gespräch"}).waitFor();
+    await page.getByRole("heading",{name:"Vom Match zum Date"}).waitFor();
     await page.getByRole("link",{name:"Konto erstellen",exact:true}).click();
     await page.getByRole("heading",{name:"Konto erstellen",exact:true}).waitFor();
     await loc("E-Mail-Adresse").fill("tester@example.test");

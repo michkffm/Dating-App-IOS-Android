@@ -20,7 +20,7 @@ export function Landing() {
           <Ionicons name="heart" size={32} color={colors.pink} accessible={false} aria-hidden={true} />
         </View>
         <Text style={styles.kicker}>HEARTPULSE</Text>
-        <Text accessibilityRole="header" style={styles.title}>Vom ersten Like zum Gespräch</Text>
+        <Text accessibilityRole="header" style={styles.title}>Vom Match zum Date</Text>
         <Text style={[styles.body, local.intro]}>Entdecken Sie Menschen, die Sie kennenlernen möchten. Wenn das Interesse auf beiden Seiten da ist, können Sie direkt miteinander schreiben.</Text>
         <View style={styles.row}>
           <LandingLink href={{ pathname: "/live", params: { mode: "register" } }} label="Konto erstellen" />
