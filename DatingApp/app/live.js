@@ -212,7 +212,10 @@ export default function Live() {
   }
   function upload() {
     return run(async () => {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false, quality: 0.85 });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"], allowsMultipleSelection: false, quality: 0.85, exif: false,
+        ...(Platform.OS === "ios" ? { preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible } : {}),
+      });
       if (result.canceled) return;
       const asset = result.assets[0];
       if (!asset) throw new ApiError(400, "Es wurde kein Bild ausgewählt.");
@@ -261,7 +264,7 @@ export default function Live() {
           <Field label="E-Mail-Adresse" value={account.email} onChangeText={on("email")} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
           <Field label="Passwort" value={account.password} onChangeText={on("password")} autoCapitalize="none" secureTextEntry autoComplete={register ? "new-password" : "current-password"} maxLength={128} />
           {register && <>
-            <Field label="Spitzname" value={account.nickname} onChangeText={on("nickname")} maxLength={40} />
+            <Field label="Spitzname" value={account.nickname} onChangeText={on("nickname")} maxLength={24} />
             <Field label="Geburtsdatum (JJJJ-MM-TT)" value={account.birthdate} onChangeText={on("birthdate")} maxLength={10} placeholder="1998-04-23" />
             {body("HeartPulse ist ab 18. Im Profil erscheint nur Ihr Alter, nicht Ihr Geburtsdatum.")}
           </>}
@@ -291,7 +294,7 @@ export default function Live() {
             <Field label="Passwort zur Löschung" secureTextEntry autoComplete="current-password" value={deletePassword} onChangeText={setDeletePassword} maxLength={128} />
             <Button label="Konto endgültig löschen" disabled={busy || !deletePassword} onPress={removeAccount} />
           </> : <>
-            {confirm.action === "report" && <Field label="Grund für die Meldung" multiline value={reason} onChangeText={setReason} maxLength={500} />}
+            {confirm.action === "report" && <Field label="Grund für die Meldung" multiline value={reason} onChangeText={setReason} maxLength={1000} />}
             {confirm.action === "block" && body("Sie können sich danach nicht mehr finden oder Nachrichten schreiben.")}
             <Button label={confirm.action === "report" ? "Meldung abschicken" : "Jetzt blockieren"} disabled={busy || (confirm.action === "report" && !reason.trim())} onPress={safety} />
           </>}
@@ -322,7 +325,7 @@ export default function Live() {
           </View>
         ))}
         <View style={styles.card}>
-          <Field label="Nachricht" multiline value={draft} onChangeText={setDraft} maxLength={2000} />
+          <Field label="Nachricht" multiline value={draft} onChangeText={setDraft} maxLength={1000} />
           <Button label="Senden" disabled={busy || !!confirm || !draft.trim()} onPress={sendChat} />
         </View>
         {!confirm && actions(match.user)}
@@ -331,8 +334,8 @@ export default function Live() {
         {heading("Mein Profil")}
         <Person person={session.user} token={token} />
         <View style={styles.card}>
-          <Field label="Spitzname" value={profile.nickname} onChangeText={(nickname) => setProfile((previous) => ({ ...previous, nickname }))} maxLength={40} />
-          <Field label="Über mich" multiline value={profile.bio} onChangeText={(bio) => setProfile((previous) => ({ ...previous, bio }))} maxLength={400} />
+          <Field label="Spitzname" value={profile.nickname} onChangeText={(nickname) => setProfile((previous) => ({ ...previous, nickname }))} maxLength={24} />
+          <Field label="Über mich" multiline value={profile.bio} onChangeText={(bio) => setProfile((previous) => ({ ...previous, bio }))} maxLength={500} />
           <Button label="Profil speichern" disabled={busy || !!confirm || !profile.nickname.trim()} onPress={saveProfile} />
           {mediaReady ? <Button label="Profilfoto auswählen" secondary disabled={busy || !!confirm} onPress={upload} /> : body("Foto-Uploads sind derzeit nicht verfügbar.")}
         </View>

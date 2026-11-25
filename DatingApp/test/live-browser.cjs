@@ -112,6 +112,8 @@ const root = path.resolve(process.argv[2]);
     await btn("Profilfoto auswählen").click();
     await (await chooser).setFiles({name:"test.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aNwAAAAASUVORK5CYII=","base64")});
     await shown("Profilfoto gespeichert.");
+    await page.getByLabel("Profilfoto von Probekonto", { exact: true }).waitFor();
+    assert.ok(requests.includes("GET /api/photos/test-photo"));
     await btn("Abmelden").click();
     await shown("Bei HeartPulse anmelden");
     await loc("E-Mail-Adresse").fill("tester@example.test");
