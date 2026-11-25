@@ -6,7 +6,9 @@
 
 ## Live web app
 
-[![HeartPulse home page](docs/heartpulse-start.png)](https://heartpulse.onrender.com)
+[![HeartPulse Discover view with a profile card](docs/heartpulse-entdecken.png)](https://heartpulse.onrender.com)
+
+*Screenshot of the web app with a fictional sample profile.*
 
 ## Features
 
