@@ -39,3 +39,8 @@ yarn-error.*
 
 expo-env.d.ts
 # @end expo-cli
+# Never commit local credentials
+.env
+.env.*
+!.env.example
+.vercel/
