@@ -74,15 +74,36 @@ function send(res, status, value){
   res.writeHead(status);
   res.end(JSON.stringify(value));
 }
+const invalidLink="Der Link ist abgelaufen oder ungültig.";
+function requirePassword(value){
+  if(typeof value!=="string" || value.length<12 || value.length>128) deny(400,"Passwort muss 12 bis 128 Zeichen haben.");
+  return value;
+}
 const badAuth = "E-Mail-Adresse oder Passwort ist falsch.";
 const noTarget = "Profil nicht verfügbar.";
 function cookie(name, value, production, maxAge) {
   return name+"="+value+"; Path=/; HttpOnly; SameSite=Strict; Max-Age="+maxAge+(production?"; Secure":"");
 }
-export function createApp({db, media=null, origins=[], production=false, registration=!production, staticHandler, log=console.error}){
+export function createApp({db, media=null, accountMail=null, origins=[], production=false, registration=!production, staticHandler, log=console.error}){
   const allowed=new Set(origins);
   const cookieName=production?"__Host-heartpulse":"heartpulse_local";
   const limiters=new Map();
+  let pendingMail=0;
+  function scheduleAccountMail(purpose,email){
+    if(!accountMail || pendingMail>=30) return;
+    pendingMail++;
+    setImmediate(async ()=>{
+      try {
+        const user=await one(db,"SELECT id,verified_at FROM hp_users WHERE email=$1 AND suspended_at IS NULL",[email]);
+        if(!user || (purpose==="verify"?!!user.verified_at:!user.verified_at)) return;
+        const validFor=purpose==="verify"?"24 hours":"30 minutes";
+        const token=randomBytes(32).toString("hex");
+        await db.query("INSERT INTO hp_account_tokens(token_hash,purpose,user_id,expires_at) VALUES($1,$2,$3,now()+$4::interval)",[digest(token),purpose,user.id,validFor]);
+        await accountMail.send({purpose,recipient:email,token});
+      } catch { log("Account mail not sent"); }
+      finally { pendingMail--; }
+    });
+  }
   function checkRate(key,max,window){
     const time=Date.now();
     if(limiters.size>4096) for(const [id,v] of limiters) if(v.until<time) limiters.delete(id);
@@ -101,13 +122,14 @@ export function createApp({db, media=null, origins=[], production=false, registr
   }
   const blockPair=async (conn,a,b) => !!(await one(conn,"SELECT "+blockExists+" AS blocked",[a,b])).blocked;
   async function lockPair(conn,a,b){
-    const locked=await rows(conn,"SELECT id FROM hp_users WHERE id IN ($1,$2) ORDER BY id FOR UPDATE",[a,b]);
+    const locked=await rows(conn,"SELECT id FROM hp_users WHERE id IN ($1,$2) AND suspended_at IS NULL ORDER BY id FOR UPDATE",[a,b]);
     if(locked.length!==2) deny(404,noTarget);
   }
   async function conversation(conn,id,user,lock=false){
     const convo=await one(conn,"SELECT * FROM hp_matches WHERE id=$1 AND (first_user=$2 OR second_user=$2)",[id,user]);
     if(!convo) deny(404,"Match nicht verfügbar.");
     if(lock) await lockPair(conn,convo.first_user,convo.second_user);
+    else if(await one(conn,"SELECT id FROM hp_users WHERE id IN ($1,$2) AND suspended_at IS NOT NULL LIMIT 1",[convo.first_user,convo.second_user])) deny(404,"Match nicht verfügbar.");
     if(await blockPair(conn,convo.first_user,convo.second_user)) deny(404,"Match nicht verfügbar.");
     return convo;
   }
@@ -141,31 +163,73 @@ export function createApp({db, media=null, origins=[], production=false, registr
       return send(res,204);
     }
     if(!["GET","HEAD"].includes(method) && !native && !origin) deny(403,"Ursprung nicht erlaubt.");
-    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media}); }
+    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media,accountEmail:!!accountMail}); }
+    if(method==="POST" && ["/api/resend-verification","/api/forgot-password"].includes(path)){
+      if(!accountMail) deny(503,"E-Mail-Versand ist noch nicht verfügbar.");
+      checkRate("email-ip:"+ip,30,3600000);
+      const email=normalizeMail((await json(req)).email);
+      checkRate("email-to:"+path+":"+email,5,3600000);
+      scheduleAccountMail(path==="/api/resend-verification"?"verify":"reset",email);
+      return send(res,202,{accepted:true});
+    }
+    if(method==="POST" && ["/api/verify-email","/api/reset-password"].includes(path)){
+      if(!accountMail) deny(503,"E-Mail-Versand ist noch nicht verfügbar.");
+      checkRate("consume:"+ip,40,3600000);
+      const input=await json(req);
+      const purpose=path==="/api/verify-email"?"verify":"reset";
+      if(typeof input.token!=="string" || !/^[0-9a-f]{64}$/.test(input.token)) deny(400,invalidLink);
+      if(purpose==="reset") requirePassword(input.password);
+      const tokenHash=digest(input.token);
+      const pending=await one(db,"SELECT user_id FROM hp_account_tokens WHERE token_hash=$1 AND purpose=$2 AND expires_at>now()",[tokenHash,purpose]);
+      if(!pending) deny(400,invalidLink);
+      const newHash=purpose==="reset"?await hashPassword(input.password):null;
+      await db.transaction(async tx=>{
+        const user=await one(tx,"SELECT id,verified_at FROM hp_users WHERE id=$1 FOR UPDATE",[pending.user_id]);
+        if(!user) deny(400,invalidLink);
+        const claimed=await one(tx,"DELETE FROM hp_account_tokens WHERE token_hash=$1 AND purpose=$2 AND user_id=$3 AND expires_at>now() RETURNING user_id",[tokenHash,purpose,user.id]);
+        if(!claimed) deny(400,invalidLink);
+        if(purpose==="verify"){
+          if(user.verified_at) deny(400,invalidLink);
+          await tx.query("UPDATE hp_users SET verified_at=now() WHERE id=$1",[user.id]);
+        } else {
+          if(!user.verified_at) deny(400,invalidLink);
+          await tx.query("UPDATE hp_users SET password_hash=$2 WHERE id=$1",[user.id,newHash]);
+          await tx.query("DELETE FROM hp_sessions WHERE user_id=$1",[user.id]);
+        }
+        await tx.query("DELETE FROM hp_account_tokens WHERE user_id=$1 AND purpose=$2",[user.id,purpose]);
+      });
+      return send(res,204);
+    }
     if(method==="POST" && ["/api/register","/api/login"].includes(path)){
       checkRate("authip:"+ip,60,600000);
       const input=await json(req), email=normalizeMail(input.email);
       checkRate("authaccount:"+email,10,600000);
       if(path==="/api/register"){
         if(!registration) deny(403,"Registrierung ist noch nicht freigegeben.");
-        if(typeof input.password!=="string" || input.password.length<12 || input.password.length>128) deny(400,"Passwort muss 12 bis 128 Zeichen haben.");
+        requirePassword(input.password);
         const nickname=field(input.nickname,2,24,"Spitzname muss 2 bis 24 Zeichen haben."), birth=dob(input.birthdate);
         let created;
         try {
           const hash=await hashPassword(input.password);
-          created=await one(db,"INSERT INTO hp_users(id,email,password_hash,nickname,birthdate) VALUES($1,$2,$3,$4,$5) RETURNING "+publicFields,[randomUUID(),email,hash,nickname,birth]);
-        } catch(error) { if(error.code==="23505") deny(409,"Registrierung nicht möglich. Versuchen Sie es mit der Anmeldung."); throw error; }
+          created=await one(db,"INSERT INTO hp_users(id,email,password_hash,nickname,birthdate,verified_at) VALUES($1,$2,$3,$4,$5,CASE WHEN $6::boolean THEN NULL ELSE now() END) RETURNING "+publicFields,[randomUUID(),email,hash,nickname,birth,!!accountMail]);
+        } catch(error) {
+          if(error.code==="23505" && accountMail) return send(res,202,{verificationRequired:true});
+          if(error.code==="23505") deny(409,"Registrierung nicht möglich. Versuchen Sie es mit der Anmeldung.");
+          throw error;
+        }
+        if(accountMail){scheduleAccountMail("verify",email);return send(res,202,{verificationRequired:true});}
         return send(res,201,await session(req,res,created,native));
       }
-      const candidate=await one(db,"SELECT "+publicFields+",password_hash FROM hp_users WHERE email=$1",[email]);
+      const candidate=await one(db,"SELECT "+publicFields+",password_hash,verified_at FROM hp_users WHERE email=$1 AND suspended_at IS NULL",[email]);
       if(!await passwordOk(input.password,candidate?.password_hash)) deny(401,badAuth);
+      if(accountMail&&!candidate.verified_at) deny(403,"Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.");
       return send(res,200,await session(req,res,candidate,native));
     }
     const raw = native ? (/^Bearer ([0-9a-f]{64})$/i.exec(req.headers.authorization||"")?.[1]) :
       ((req.headers.cookie||"").split(";").map(x=>x.trim()).find(x=>x.startsWith(cookieName+"="))?.slice(cookieName.length+1));
     if(!raw || !/^[0-9a-f]{64}$/.test(raw)) deny(401,"Bitte anmelden.");
     const key=digest(raw);
-    const actor=await one(db,"SELECT user_id FROM hp_sessions WHERE key_hash=$1 AND expires_at>now()",[key]);
+    const actor=await one(db,"SELECT s.user_id FROM hp_sessions s JOIN hp_users u ON u.id=s.user_id WHERE s.key_hash=$1 AND s.expires_at>now() AND u.suspended_at IS NULL",[key]);
     if(!actor) deny(401,"Bitte anmelden.");
     const me=actor.user_id;
     checkRate("api:"+me,200,60000);
@@ -199,7 +263,7 @@ export function createApp({db, media=null, origins=[], production=false, registr
       return send(res,204);
     }
     if(path==="/api/discover" && method==="GET"){
-      const profiles=await rows(db,"SELECT "+publicFields+" FROM hp_users u WHERE id<>$1 AND NOT EXISTS(SELECT 1 FROM hp_choices c WHERE c.actor=$1 AND c.target=u.id) AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$1 AND b.target=u.id) OR (b.actor=u.id AND b.target=$1)) ORDER BY created_at DESC,id LIMIT 30",[me]);
+      const profiles=await rows(db,"SELECT "+publicFields+" FROM hp_users u WHERE id<>$1 AND u.suspended_at IS NULL AND u.verified_at IS NOT NULL AND NOT EXISTS(SELECT 1 FROM hp_choices c WHERE c.actor=$1 AND c.target=u.id) AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$1 AND b.target=u.id) OR (b.actor=u.id AND b.target=$1)) ORDER BY created_at DESC,id LIMIT 30",[me]);
       return send(res,200,{profiles:profiles.map(publicUser)});
     }
     if(path==="/api/decisions" && method==="POST"){
@@ -219,7 +283,7 @@ export function createApp({db, media=null, origins=[], production=false, registr
       return send(res,200,{matched});
     }
     if(path==="/api/matches" && method==="GET"){
-      const data=await rows(db,"SELECT u.id,u.nickname,u.birthdate::text AS birthdate,u.bio,u.photo_id,m.id AS match_id FROM hp_matches m JOIN hp_users u ON u.id=CASE WHEN m.first_user=$1 THEN m.second_user ELSE m.first_user END WHERE (m.first_user=$1 OR m.second_user=$1) AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$1 AND b.target=u.id) OR (b.actor=u.id AND b.target=$1)) ORDER BY m.id LIMIT 100",[me]);
+      const data=await rows(db,"SELECT u.id,u.nickname,u.birthdate::text AS birthdate,u.bio,u.photo_id,m.id AS match_id FROM hp_matches m JOIN hp_users u ON u.id=CASE WHEN m.first_user=$1 THEN m.second_user ELSE m.first_user END WHERE (m.first_user=$1 OR m.second_user=$1) AND u.suspended_at IS NULL AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$1 AND b.target=u.id) OR (b.actor=u.id AND b.target=$1)) ORDER BY m.id LIMIT 100",[me]);
       return send(res,200,{matches:data.map(row=>({id:row.match_id,user:publicUser(row)}))});
     }
     const chat=/^\/api\/matches\/([0-9a-f-]+)\/messages$/i.exec(path);
@@ -281,7 +345,7 @@ export function createApp({db, media=null, origins=[], production=false, registr
     if(image && method==="GET"){
       if(!media) deny(404,"Bild nicht verfügbar.");
       const id=uuid(image[1]);
-      const photo=await one(db,"SELECT u.id FROM hp_users u WHERE u.photo_id=$1 AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$2 AND b.target=u.id) OR (b.actor=u.id AND b.target=$2))",[id,me]);
+      const photo=await one(db,"SELECT u.id FROM hp_users u WHERE u.photo_id=$1 AND u.suspended_at IS NULL AND NOT EXISTS(SELECT 1 FROM hp_blocks b WHERE (b.actor=$2 AND b.target=u.id) OR (b.actor=u.id AND b.target=$2))",[id,me]);
       if(!photo) deny(404,"Bild nicht verfügbar.");
       const stream=await media.get(id).catch(()=>null);
       if(!stream) deny(404,"Bild nicht verfügbar.");

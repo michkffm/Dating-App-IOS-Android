@@ -3,6 +3,16 @@ import { PGlite } from "@electric-sql/pglite";
 import pg from "pg";
 
 const schema = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
+export function verifyProductionDbUrl(value){
+  if(!value) throw new Error("DATABASE_URL required for production");
+  const url=new URL(value);
+  if(!["postgresql:","postgres:"].includes(url.protocol) || !url.hostname || !url.username || !url.password ||
+     url.searchParams.getAll("sslmode").length!==1 || url.searchParams.get("sslmode")!=="verify-full" ||
+     url.searchParams.has("uselibpqcompat") || url.searchParams.has("sslrootcert") ||
+     url.searchParams.has("sslcert") || url.searchParams.has("sslkey")) throw new Error("Production database must use PostgreSQL with certificate and hostname verification");
+  return value;
+}
+
 export async function openDb({ url, dir } = {}) {
   if (!url) {
     const db = new PGlite(dir);

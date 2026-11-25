@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb } from "../db.mjs";
 import { createApp } from "../app.mjs";
+import { openReports, decideReport } from "../moderation.mjs";
 
 test("database/API: identity, mutual matches, protected chat and photos, blocking, reports, deletion", {timeout:45000}, async (t) => {
   const db=await openDb();
@@ -36,7 +37,7 @@ test("database/API: identity, mutual matches, protected chat and photos, blockin
     assert.equal(r.status,expected,`${method} ${path} ${JSON.stringify(value)}`);
     return {r,value,cookie:r.headers.get("set-cookie")?.split(";")[0]};
   };
-  assert.deepEqual((await call("/api/health")).value,{status:"ok",media:true});
+  assert.deepEqual((await call("/api/health")).value,{status:"ok",media:true,accountEmail:false});
   await call("/api/register",{method:"POST",data:draft("Anon"),requestOrigin:"https://elsewhere.invalid",expected:403});
   await call("/api/register",{method:"POST",data:{...draft("Minor"),birthdate:new Date().toISOString().slice(0,10)},expected:400});
   const ana=await call("/api/register",{method:"POST",data:draft("Ana"),expected:201});
@@ -91,6 +92,14 @@ test("database/API: identity, mutual matches, protected chat and photos, blockin
   await app.collectMedia();
   assert.equal(cleaned.length,1);
   assert.equal(objects.size,0);
+  await call("/api/report",{cookie:zoe.cookie,method:"POST",data:{targetId:B,reason:"Moderation fixture"},expected:204});
+  const report=(await openReports(db)).find(item=>item.target===B);
+  assert.ok(report);
+  assert.equal(await decideReport(db,report.id,"suspended"),true);
+  assert.equal(await decideReport(db,report.id,"suspended"),false);
+  await call("/api/me",{cookie:bob.cookie,expected:401});
+  await call("/api/login",{method:"POST",data:draft("Bob"),expected:401});
+  assert.equal((await call("/api/discover",{cookie:zoe.cookie})).value.profiles.some(u=>u.id===B),false);
   await call("/api/logout",{method:"POST",cookie:zoe.cookie,expected:204});
   await call("/api/me",{cookie:zoe.cookie,expected:401});
   assert.deepEqual(failures,[]);

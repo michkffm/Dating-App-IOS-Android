@@ -55,3 +55,16 @@ CREATE TABLE IF NOT EXISTS hp_media_gc (
   id uuid PRIMARY KEY,
   enqueued_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE hp_users ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+CREATE TABLE IF NOT EXISTS hp_account_tokens (
+  token_hash char(64) PRIMARY KEY,
+  purpose varchar(6) NOT NULL CHECK (purpose IN ('verify','reset')),
+  user_id uuid NOT NULL REFERENCES hp_users(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS hp_account_token_expiry ON hp_account_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS hp_account_token_owner ON hp_account_tokens(user_id,purpose);
+ALTER TABLE hp_users ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
+ALTER TABLE hp_reports ADD COLUMN IF NOT EXISTS handled_at timestamptz;
+ALTER TABLE hp_reports ADD COLUMN IF NOT EXISTS resolution varchar(16) CHECK (resolution IN ('dismissed','suspended'));
+CREATE INDEX IF NOT EXISTS hp_open_reports ON hp_reports(created_at,id) WHERE handled_at IS NULL;

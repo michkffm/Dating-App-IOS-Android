@@ -8,11 +8,13 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env index.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "moderate": "node --env-file-if-exists=.env moderation.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.15",
     "cloudinary": "^2.9.0",
+    "nodemailer": "10.6.1",
     "pg": "^8.16.3",
     "sharp": "0.35.5"
   }

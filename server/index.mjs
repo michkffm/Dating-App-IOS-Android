@@ -2,8 +2,9 @@ import { createServer } from "node:http";
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { createApp } from "./app.mjs";
-import { openDb } from "./db.mjs";
+import { openDb, verifyProductionDbUrl } from "./db.mjs";
 import { cloudMedia } from "./media.mjs";
+import { smtpAccountMail } from "./account-mail.mjs";
 import { staticWeb } from "./static.mjs";
 
 const env=process.env, production=env.NODE_ENV==="production";
@@ -16,16 +17,16 @@ for(const value of configured){
   if(u.origin!==value || (production&&u.protocol!=="https:")) throw new Error("Invalid APP_ORIGINS");
 }
 if(production&&!configured.length) throw new Error("APP_ORIGINS required for production");
-if(production&&!env.DATABASE_URL) throw new Error("DATABASE_URL required for production");
-if(production && env.REGISTRATION_ENABLED==="true") {
-  throw new Error("Production registration requires email verification; use local mode for fictional test identities");
-}
+if(production) verifyProductionDbUrl(env.DATABASE_URL);
+const accountMail=smtpAccountMail({smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:env.PUBLIC_APP_ORIGIN,production});
+if(production && env.PUBLIC_APP_ORIGIN && !configured.includes(env.PUBLIC_APP_ORIGIN)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
+if(production && env.REGISTRATION_ENABLED==="true" && !accountMail) throw new Error("Production registration requires configured account email");
 if(production && env.NODE_TLS_REJECT_UNAUTHORIZED==="0") throw new Error("TLS verification must remain enabled");
 if(!env.DATABASE_URL) await mkdir(dirname(localDir),{recursive:true,mode:0o700});
 const db=await openDb({url:env.DATABASE_URL,dir:localDir});
 const media=cloudMedia({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,apiSecret:env.CLOUDINARY_API_SECRET});
 const app=createApp({
-  db, media, production,
+  db, media, accountMail, production,
   origins:[...configured,...(production?[]:["http://127.0.0.1:"+port,"http://localhost:"+port])],
   registration:production?env.REGISTRATION_ENABLED==="true":env.REGISTRATION_ENABLED!=="false",
   staticHandler:staticWeb(env.HEARTPULSE_WEB_DIR)
@@ -37,6 +38,7 @@ const housekeeping=setInterval(async()=>{
   try{
     await app.collectMedia();
     await db.query("DELETE FROM hp_sessions WHERE expires_at<=now()");
+    await db.query("DELETE FROM hp_account_tokens WHERE expires_at<=now()");
   } catch { console.error("Housekeeping delayed"); }
   finally { collecting=false; }
 },60000);

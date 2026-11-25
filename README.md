@@ -39,7 +39,12 @@ Die API-Tests prüfen Anmeldung, Session-Schutz, gegenseitige Matches, Zugriff a
 - Web-Sitzungen verwenden ein HttpOnly-Cookie. Die API prüft den Ursprung mutierender Anfragen, begrenzt sensible Zugriffe und speichert nur gehashte Sitzungstoken.
 - Echte Zugangsdaten gehören in den Secret Store des Hosters. Die bisher veröffentlichten Schlüssel müssen in Cloudinary widerrufen werden; nicht für Produktion wiederverwenden.
 
-**Freigabe:** Lokal getestet, noch nicht öffentlich in Betrieb. Vor der öffentlichen Registrierung fehlen E-Mail-Verifikation, Passwort-Wiederherstellung, ein betreuter Moderationsprozess, Tests mit echtem PostgreSQL und frisch konfiguriertem Cloudinary sowie Tests auf iOS- und Android-Geräten. Der Produktionsserver lässt eine öffentliche Registrierung deshalb derzeit nicht zu.
+**Freigabe:** Noch nicht öffentlich in Betrieb. Kontobestätigung, Passwort-Wiederherstellung und die Meldungsbearbeitung wurden lokal mit Testdaten geprüft. Vor der öffentlichen Registrierung müssen E-Mail-Versand, zentraler PostgreSQL-Dienst und Cloudinary eingerichtet und gemeinsam getestet werden. Dazu gehören echte iOS- und Android-Geräte und eine verantwortliche Person für Meldungen. Die Registrierung bleibt im Hosting standardmäßig aus.
+
+## E-Mail und Moderation
+
+- Für Bestätigung und Passwort-Wiederherstellung müssen `SMTP_URL`, `MAIL_FROM` und `PUBLIC_APP_ORIGIN` gesetzt sein. In Produktion liegt der Host der Links auf der freigegebenen HTTPS-Adresse und der Mailtransport nutzt TLS. Die Datenbank speichert nur Fingerabdrücke der zeitlich begrenzten Einmal-Codes. Ein Passwortwechsel beendet bestehende Sitzungen.
+- Autorisierte Betreiber lesen Meldungen mit `npm run moderate -- queue` im Serverordner und schließen sie nach Prüfung mit `dismiss REPORT_ID` oder `suspend REPORT_ID --confirm` ab. Es gibt keinen öffentlich erreichbaren Admin-Endpunkt. Die Ausgabe enthält Meldungsdaten und gehört nicht in öffentliche Logs, Tickets oder Chats.
 
 ## Vorbereitung fürs Hosting
 
@@ -47,10 +52,9 @@ Das Dockerfile bündelt Web und API für den Betrieb auf demselben Ursprung.
 Für einen Render-Webdienst ist `/api/health` als Healthcheck vorgesehen.
 `APP_ORIGINS` muss exakt die freigegebene HTTPS-Adresse enthalten; der
 PostgreSQL-Zugang und die neu ausgestellten Cloudinary-Schlüssel werden nur
-als Secrets am Dienst hinterlegt. Bei einem externen Datenbankzugang muss TLS
-aktiv bleiben. Das Dockerfile wurde vorbereitet, aber der Container noch
+als Secrets am Dienst hinterlegt. Der PostgreSQL-Endpunkt muss TLS mit Prüfung von Zertifikat und Hostname unterstützen (`sslmode=verify-full`). Das Dockerfile wurde vorbereitet, aber der Container noch
 nicht auf Render betrieben. Die Produktion lässt öffentliche Registrierung
-bis zu den oben genannten Freigabekriterien nicht zu.
+ohne konfigurierten E-Mail-Versand nicht zu. Auch nach der Einrichtung erst nach Freigabetest aktivieren.
 
 ## Autor
 

@@ -28,7 +28,9 @@ Visit `http://127.0.0.1:3407`. This isolates the API and web frontend on one ori
 
 The API never includes a user's email or birth date in other people's profile responses. Browser sessions use an HttpOnly cookie. Cloudinary credentials stay on the server. Photos are re-encoded without metadata and served only after an API access check. Regenerate previously exposed credentials; never store real values in Git.
 
-Not publicly deployed. Public registration is disabled in production while email verification, password recovery, staffed moderation, native device tests and a hosted PostgreSQL/Cloudinary integration test are pending.
+Not publicly deployed. Account email verification, password recovery, and moderation tooling were tested locally with fictional data. Public registration is off by default. Before enabling it, verify transactional mail, hosted PostgreSQL, Cloudinary, and real iOS/Android devices, and assign an operator to review reports.
+
+Set `SMTP_URL`, `MAIL_FROM`, and `PUBLIC_APP_ORIGIN` for account email. Production requires HTTPS for account links and TLS for SMTP. Password recovery revokes existing sessions. Authorized operators can run `npm run moderate -- queue` from the server directory; report data is private and should not be copied to public logs or issues.
 
 ## Author
 
