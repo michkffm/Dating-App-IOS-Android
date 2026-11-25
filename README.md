@@ -45,28 +45,9 @@ Die App ist unter `http://127.0.0.1:3407` erreichbar. Lokal nutzt der Server ein
 
 Die API-Tests prüfen Anmeldung, Session-Schutz, gegenseitige Matches, Zugriff auf Chat und Fotos, Blockieren, Melden, Löschung und Persistenz. Die Medien-Tests prüfen die Dekodierung, Größenbegrenzung und Entfernung von Metadaten.
 
-## Datenschutz und Betrieb
+## Technische Dokumentation
 
-- E-Mail, Geburtsdatum und Sitzungsdaten erscheinen nicht in fremden Profilen. Das sichtbare Profil zeigt nur den Spitznamen, das Alter und die freigegebenen Profilfelder.
-- Der Server signiert Cloudinary-Zugriffe. Hochgeladene Fotos werden neu kodiert; Originale, Metadaten und Anbieter-Schlüssel landen nicht im Client. Nicht angemeldete und gegenseitig blockierte Profile erhalten keine Bilder. Fotos gelöschter Konten werden zur Entfernung beim Anbieter vorgemerkt.
-- Web-Sitzungen verwenden ein HttpOnly-Cookie. Die API prüft den Ursprung mutierender Anfragen, begrenzt sensible Zugriffe und speichert nur gehashte Sitzungstoken.
-- Echte Zugangsdaten gehören in den Secret Store des Hosters. Die bisher veröffentlichten Schlüssel müssen in Cloudinary widerrufen werden; nicht für Produktion wiederverwenden.
-
-**Freigabe:** Die Web-App ist auf Render erreichbar; die Registrierung neuer Konten ist geschlossen. Kontobestätigung, Passwort-Wiederherstellung und die Meldungsbearbeitung wurden lokal mit Testdaten geprüft. Vor der öffentlichen Registrierung müssen E-Mail-Versand, PostgreSQL und Cloudinary in der gehosteten Umgebung gemeinsam getestet werden. Dazu gehören echte iOS- und Android-Geräte und eine verantwortliche Person für Meldungen. Die Registrierung bleibt im Hosting standardmäßig aus.
-
-## E-Mail und Moderation
-
-- Für Bestätigung und Passwort-Wiederherstellung braucht der konfigurierte Mailanbieter einen Schlüssel und einen freigegebenen Absender. Auf Render nutzt HeartPulse Resend über HTTPS. Links verweisen auf die freigegebene HTTPS-Adresse. Die Datenbank speichert nur Fingerabdrücke der zeitlich begrenzten Einmal-Codes. Ein Passwortwechsel beendet bestehende Sitzungen.
-- Autorisierte Betreiber lesen Meldungen mit `npm run moderate -- queue` im Serverordner und schließen sie nach Prüfung mit `dismiss REPORT_ID` oder `suspend REPORT_ID --confirm` ab. Es gibt keinen öffentlich erreichbaren Admin-Endpunkt. Die Ausgabe enthält Meldungsdaten und gehört nicht in öffentliche Logs, Tickets oder Chats.
-
-## Vorbereitung fürs Hosting
-
-Das Dockerfile bündelt Web und API für den Betrieb auf demselben Ursprung.
-Der Render-Healthcheck nutzt `/healthz`; `/api/health` prüft zusätzlich PostgreSQL und meldet den Konfigurationsstand der Dienste.
-`APP_ORIGINS` muss exakt die freigegebene HTTPS-Adresse enthalten; der
-PostgreSQL-Zugang und die neu ausgestellten Cloudinary-Schlüssel werden nur
-als Secrets am Dienst hinterlegt. Der PostgreSQL-Endpunkt muss TLS mit Prüfung von Zertifikat und Hostname unterstützen (`sslmode=verify-full`). Der Container läuft auf Render. Die Produktion lässt öffentliche Registrierung
-ohne konfigurierten E-Mail-Versand nicht zu. Auch nach der Einrichtung erst nach Freigabetest aktivieren.
+[Hosting, Datenschutz und Betrieb](docs/hosting.md)
 
 ## Autor
 

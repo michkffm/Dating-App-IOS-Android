@@ -37,13 +37,9 @@ Visit `http://127.0.0.1:3407`. This isolates the API and web frontend on one ori
 (cd server && npm test)
 ```
 
-## Privacy and release status
+## Technical documentation
 
-The API never includes a user's email or birth date in other people's profile responses. Browser sessions use an HttpOnly cookie. Cloudinary credentials stay on the server. Photos are re-encoded without metadata and served only after an API access check. Regenerate previously exposed credentials; never store real values in Git.
-
-The web app is hosted on Render, with new account registration closed. Account email verification, password recovery, and moderation tooling were tested locally with fictional data. Before enabling it, verify transactional mail, hosted PostgreSQL, Cloudinary, and real iOS/Android devices, and assign an operator to review reports.
-
-Configure a mail provider and an approved sender for account email. HeartPulse uses Resend over HTTPS on Render, and production account links require HTTPS. Password recovery revokes existing sessions. Authorized operators can run `npm run moderate -- queue` from the server directory; report data is private and should not be copied to public logs or issues.
+[Hosting, privacy, and operations](docs/hosting.md)
 
 ## Author
 
