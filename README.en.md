@@ -6,7 +6,7 @@ HeartPulse is a dating app for iOS, Android and the web. It combines an Expo fro
 
 ## Collaborative Project
 
-**Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and **Michael Koch** worked together on HeartPulse.
+**Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and I worked together on HeartPulse.
 
 [![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
 [![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
