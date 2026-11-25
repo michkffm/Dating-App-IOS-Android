@@ -6,6 +6,8 @@ import { File } from "expo-file-system";
 import { Button, styles } from "../src/experience";
 import { api, ApiError, apiOrigin, LIVE_ENABLED } from "../src/live-api";
 import { AccountLinks, AuthHeading, EmptyState, Field, LiveNavigation, LiveScreen, Message, Person, TextAction } from "../src/live-controls";
+import { BirthdateField } from "../src/birthdate-field";
+import { normalizeBirthdate } from "../src/birthdate.cjs";
 import { isAccountToken, subscribeToAccountLinks } from "../src/account-actions.cjs";
 
 const emptyAccount = { email: "", password: "", nickname: "", birthdate: "" };
@@ -26,6 +28,7 @@ export default function Live() {
   const [phase, setPhase] = useState("starting");
   const [pane, setPane] = useState("discover");
   const [account, setAccount] = useState(emptyAccount);
+  const [registrationFeedback, setRegistrationFeedback] = useState("");
   const [profile, setProfile] = useState(null);
   const [people, setPeople] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -60,6 +63,7 @@ export default function Live() {
     setConfirm(null);
     setReason("");
     setAccount(emptyAccount);
+    setRegistrationFeedback("");
     setDeletePassword("");
     clearAccountAction();
   }
@@ -69,6 +73,7 @@ export default function Live() {
     setProfile(editing(user));
     setPhase("account");
     setAccount(emptyAccount);
+    setRegistrationFeedback("");
     clearAccountAction();
   }
 
@@ -80,6 +85,7 @@ export default function Live() {
   }
 
   function changeAuth(next) {
+    setRegistrationFeedback("");
     clearAccountAction();
     setError("");
     setNotice("");
@@ -223,13 +229,31 @@ export default function Live() {
 
   function submitAuth() {
     const register = phase === "register";
+    const { email, password, nickname, birthdate } = account;
+    const normalizedDate = register ? normalizeBirthdate(birthdate) : null;
+    if (register) {
+      const problem = !/^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(email.trim()) ? "Geben Sie eine gültige E-Mail-Adresse ein."
+        : password.length < 12 ? "Das Passwort muss mindestens 12 Zeichen haben."
+        : nickname.trim().length < 2 ? "Der Nickname muss mindestens 2 Zeichen haben."
+        : !normalizedDate ? "Geben Sie ein gültiges Geburtsdatum ein, zum Beispiel 23.04.1998, oder wählen Sie eines im Kalender."
+        : "";
+      setRegistrationFeedback(problem);
+      if (problem) return;
+    }
     return run(async () => {
-      const { email, password, nickname, birthdate } = account;
-      const payload = register ? { email: email.trim(), password, nickname: nickname.trim(), birthdate: birthdate.trim() } : { email: email.trim(), password };
+      const payload = register ? { email: email.trim(), password, nickname: nickname.trim(), birthdate: normalizedDate } : { email: email.trim(), password };
       let result;
       try {
         result = await api(register ? "/api/register" : "/api/login", { method: "POST", data: payload });
       } catch (e) {
+        if (register && registrationPilot && e.status === 403) {
+          setRegistrationFeedback("Für diesen Test ist nur die eingeladene E-Mail-Adresse freigeschaltet.");
+          return;
+        }
+        if (register && e instanceof ApiError) {
+          setRegistrationFeedback(e.message);
+          return;
+        }
         if (!register && accountEmail && e.status === 403) {
           changeAuth("check-email");
           setNotice("Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.");
@@ -425,9 +449,11 @@ export default function Live() {
       );
     }
     const register = phase === "register";
-    const on = (key) => (value) => setAccount((current) => ({ ...current, [key]: value }));
-    const canSubmit = !!account.email.trim() && !!account.password && (!register
-      || !!(account.password.length >= 12 && account.nickname.trim() && /^\d{4}-\d{2}-\d{2}$/.test(account.birthdate.trim())));
+    const on = (key) => (value) => {
+      setAccount((current) => ({ ...current, [key]: value }));
+      if (registrationFeedback) setRegistrationFeedback("");
+    };
+    const canSubmit = register || (!!account.email.trim() && !!account.password);
     return (
       <LiveScreen busy={busy} error={error} notice={notice}>
         <AuthHeading title={register ? "Konto erstellen" : "Bei HeartPulse anmelden"} />
@@ -436,10 +462,11 @@ export default function Live() {
           <Field label="Passwort" value={account.password} onChangeText={on("password")} autoCapitalize="none" secureTextEntry autoComplete={register ? "new-password" : "current-password"} maxLength={128} />
           {register && <>
             {body("Wählen Sie ein Passwort mit mindestens 12 Zeichen.")}
-            <Field label="Spitzname" value={account.nickname} onChangeText={on("nickname")} maxLength={24} />
-            <Field label="Geburtsdatum (JJJJ-MM-TT)" value={account.birthdate} onChangeText={on("birthdate")} maxLength={10} placeholder="1998-04-23" />
+            <Field label="Nickname" value={account.nickname} onChangeText={on("nickname")} maxLength={24} />
+            <BirthdateField value={account.birthdate} onChange={on("birthdate")} />
             {body("HeartPulse ist ab 18. Im Profil erscheint nur Ihr Alter, nicht Ihr Geburtsdatum.")}
           </>}
+          {register && registrationFeedback ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{registrationFeedback}</Text> : null}
           <Button label={register ? "Registrieren" : "Anmelden"} disabled={busy || !canSubmit} onPress={submitAuth} />
           {(register || registrationOpen || registrationPilot) && <Button label={register ? "Zum Login" : registrationPilot ? "Eingeladenes Konto erstellen" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />}
           {!register && !registrationOpen && body(registrationPilot ? "Die Registrierung ist derzeit nur für eingeladene Konten geöffnet." : "Die öffentliche Registrierung ist derzeit geschlossen.")}
@@ -507,7 +534,7 @@ export default function Live() {
         {heading("Mein Profil")}
         <Person person={session.user} token={token} />
         <View style={styles.card}>
-          <Field label="Spitzname" value={profile.nickname} onChangeText={(nickname) => setProfile((previous) => ({ ...previous, nickname }))} maxLength={24} />
+          <Field label="Nickname" value={profile.nickname} onChangeText={(nickname) => setProfile((previous) => ({ ...previous, nickname }))} maxLength={24} />
           <Field label="Über mich" multiline value={profile.bio} onChangeText={(bio) => setProfile((previous) => ({ ...previous, bio }))} maxLength={500} />
           <Button label="Profil speichern" disabled={busy || !!confirm || !profile.nickname.trim()} onPress={saveProfile} />
           {mediaReady ? <Button label="Profilfoto auswählen" secondary disabled={busy || !!confirm} onPress={upload} /> : body("Foto-Uploads sind derzeit nicht verfügbar.")}

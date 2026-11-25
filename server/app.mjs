@@ -231,7 +231,7 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
       if(path==="/api/register"){
         if(!registration&&!pilot.has(email)) deny(403,"Registrierung ist noch nicht freigegeben.");
         requirePassword(input.password);
-        const nickname=field(input.nickname,2,24,"Spitzname muss 2 bis 24 Zeichen haben."), birth=dob(input.birthdate);
+        const nickname=field(input.nickname,2,24,"Der Nickname muss 2 bis 24 Zeichen haben."), birth=dob(input.birthdate);
         let created;
         try {
           const hash=await hashPassword(input.password);
@@ -271,7 +271,7 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
     }
     if(path==="/api/me" && method==="PATCH"){
       const input=await json(req);
-      const nickname=field(input.nickname,2,24,"Spitzname muss 2 bis 24 Zeichen haben."),bio=field(input.bio,0,500,"Beschreibung darf maximal 500 Zeichen haben.");
+      const nickname=field(input.nickname,2,24,"Der Nickname muss 2 bis 24 Zeichen haben."),bio=field(input.bio,0,500,"Beschreibung darf maximal 500 Zeichen haben.");
       const user=await one(db,"UPDATE hp_users SET nickname=$2,bio=$3 WHERE id=$1 RETURNING "+publicFields,[me,nickname,bio]);
       return send(res,200,{user:publicUser(user)});
     }

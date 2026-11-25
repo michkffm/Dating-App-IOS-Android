@@ -51,7 +51,7 @@ async function main() {
         case "GET /api/health": return json({ status: "ok", media: false, accountEmail: true, registration: true });
         case "GET /api/me": return loggedIn ? json({ user: person }) : json({}, 401);
         case "POST /api/register":
-          assert.equal(data().email, email); assert.equal(data().password, initial);
+          assert.equal(data().email, email); assert.equal(data().password, initial); assert.equal(data().birthdate, "1995-04-12");
           registered = true; return json({ verificationRequired: true }, 202);
         case "POST /api/resend-verification":
         case "POST /api/forgot-password":
@@ -93,8 +93,8 @@ async function main() {
     await button("Konto erstellen").click();
     await fill("E-Mail-Adresse", email);
     await fill("Passwort", initial);
-    await fill("Spitzname", "Testprofil");
-    await fill("Geburtsdatum (JJJJ-MM-TT)", "1995-04-12");
+    await fill("Nickname", "Testprofil");
+    await fill("Geburtsdatum (TT.MM.JJJJ)", "12.04.1995");
     await button("Registrieren").click();
     await shown("E-Mail-Adresse bestätigen");
     await button("Bestätigungslink erneut senden").click();
