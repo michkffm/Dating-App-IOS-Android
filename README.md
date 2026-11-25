@@ -1,47 +1,59 @@
 # HeartPulse
 
-HeartPulse ist eine lokale Dating-App-Demo für iOS, Android und Web. Die Oberfläche bleibt beim ursprünglichen HeartPulse-Stil mit Violett, Herzsymbol und Profilkarten. Alle Beispielprofile sind frei erfunden.
+[English](README.en.md) · [GitHub](https://github.com/michkffm/Dating-App-IOS-Android)
 
-## Lokal starten
+HeartPulse ist eine Dating-App für iOS, Android und Web. Sie verbindet ein Expo-Frontend mit einer Node.js-API und PostgreSQL. Dazu gehören Registrierung und Anmeldung, Profile, Likes, gegenseitige Matches, Chat und Kontolöschung. Nutzende können Profile melden oder sperren. Fotos werden über einen serverseitigen Cloudinary-Adapter verarbeitet.
+
+## Voraussetzungen
+
+- Node.js 24 und npm
+- Für native Installationen: ein mit dem Expo SDK kompatibler Development Build
+- Für eine Einrichtung außerhalb des Macs: PostgreSQL und ein eigener Cloudinary-Zugang eingerichtet über den Secret Store des Hosters
+
+## Lokal entwickeln
 
 ```sh
 cd DatingApp
 npm ci
-npm start
+EXPO_PUBLIC_LIVE_ENABLED=true npm run build:web
+cd ../server
+npm ci
+HEARTPULSE_WEB_DIR=../DatingApp/dist npm start
 ```
 
-Im Expo-Menü öffnet `w` die Web-Demo. Für iOS und Android braucht es eine mit dem Projekt kompatible Test-App bzw. einen passenden Development Build. Das Projekt verwendet derzeit Expo SDK 52 und ist nicht für Store-Einreichungen freigegeben.
+Die App ist unter `http://127.0.0.1:3407` erreichbar. Lokal nutzt der Server eingebettetes PostgreSQL (PGlite) und speichert Daten außerhalb von Git. Für die Entwicklung bitte ausschließlich fiktive Konten anlegen. Web und API laufen lokal unter derselben Adresse. Für native Entwicklung greifen die Apps über eine konfigurierte API-Adresse in `EXPO_PUBLIC_API_ORIGIN` zu. Der Modus mit Beispielprofilen bleibt für Offline-Tests verfügbar.
+
+## Tests
 
 ```sh
-npm test
-npx expo export --platform all
+(cd DatingApp && npm test)
+(cd server && npm test)
 ```
 
-## Was funktioniert
+Die API-Tests prüfen Anmeldung, Session-Schutz, gegenseitige Matches, Zugriff auf Chat und Fotos, Blockieren, Melden, Löschung und Persistenz. Die Medien-Tests prüfen die Dekodierung, Größenbegrenzung und Entfernung von Metadaten.
 
-- Beispielprofile ansehen, überspringen oder liken und simulierte Matches öffnen.
-- Einen optionalen **erfundenen** Demo-Spitznamen wählen.
-- Spitzname und Auswahl werden auf dem Testgerät bzw. im Browser gespeichert und lassen sich unter „Profil & Datenschutz“ löschen. Die Demo fordert keine personenbezogenen Angaben an. Bitte keine echten Namen oder sonstigen persönlichen Angaben eingeben.
-- Kein Konto, Upload, Tracking, Chat mit echten Personen oder Zahlungsverkehr.
+## Datenschutz und Betrieb
 
-## Web-Demo als statische Vorschau hosten
+- E-Mail, Geburtsdatum und Sitzungsdaten erscheinen nicht in fremden Profilen. Das sichtbare Profil zeigt nur den Spitznamen, das Alter und die freigegebenen Profilfelder.
+- Der Server signiert Cloudinary-Zugriffe. Hochgeladene Fotos werden neu kodiert; Originale, Metadaten und Anbieter-Schlüssel landen nicht im Client. Nicht angemeldete und gegenseitig blockierte Profile erhalten keine Bilder. Fotos gelöschter Konten werden zur Entfernung beim Anbieter vorgemerkt.
+- Web-Sitzungen verwenden ein HttpOnly-Cookie. Die API prüft den Ursprung mutierender Anfragen, begrenzt sensible Zugriffe und speichert nur gehashte Sitzungstoken.
+- Echte Zugangsdaten gehören in den Secret Store des Hosters. Die bisher veröffentlichten Schlüssel müssen in Cloudinary widerrufen werden; nicht für Produktion wiederverwenden.
 
-Für Vercel den Projektordner `DatingApp` auswählen. Die Konfiguration baut mit
-`npm run build:web` nach `dist` und unterstützt direkte Aufrufe der vier Demo-Routen.
-Die Vorschau braucht keine Zugangsdaten und sendet keine Netzwerkabfragen an eine API.
-Die Hosting-Konfiguration blockiert solche Verbindungen sowie Kamera-, Mikrofon-
-und Standortzugriff. Das ist eine Demo, kein Backend und kein nativer Store-Release.
+**Freigabe:** Lokal getestet, noch nicht öffentlich in Betrieb. Vor der öffentlichen Registrierung fehlen E-Mail-Verifikation, Passwort-Wiederherstellung, ein betreuter Moderationsprozess, Tests mit echtem PostgreSQL und frisch konfiguriertem Cloudinary sowie Tests auf iOS- und Android-Geräten. Der Produktionsserver lässt eine öffentliche Registrierung deshalb derzeit nicht zu.
 
-**Freigabe offen:** Das verwendete Expo SDK 52 und seine Abhängigkeiten sind
-veraltet. Den Dependency-Audit nach dem Upgrade wiederholen. Eine öffentliche
-Auslieferung erst nach Prüfung der verbleibenden hohen und kritischen Meldungen.
+## Vorbereitung fürs Hosting
 
-## Vor Hosting und echten Konten
+Das Dockerfile bündelt Web und API für den Betrieb auf demselben Ursprung.
+Für einen Render-Webdienst ist `/api/health` als Healthcheck vorgesehen.
+`APP_ORIGINS` muss exakt die freigegebene HTTPS-Adresse enthalten; der
+PostgreSQL-Zugang und die neu ausgestellten Cloudinary-Schlüssel werden nur
+als Secrets am Dienst hinterlegt. Bei einem externen Datenbankzugang muss TLS
+aktiv bleiben. Das Dockerfile wurde vorbereitet, aber der Container noch
+nicht auf Render betrieben. Die Produktion lässt öffentliche Registrierung
+bis zu den oben genannten Freigabekriterien nicht zu.
 
-1. Den im ursprünglichen Git-Stand exponierten Cloudinary-Schlüssel im Anbieter-Dashboard widerrufen oder rotieren und dessen Aktivität prüfen. Das Entfernen aus dem neuen Arbeitsstand löscht bestehende Kopien und die Git-Historie nicht.
-2. Expo schrittweise aktualisieren und den Ablauf auf einem echten iOS- und Android-Gerät prüfen.
-3. Profil, Matching und Chat an ein Backend mit Authentifizierung und objektbezogenen Zugriffsprüfungen anbinden. Die lokalen Beispieldaten nicht in echte Konten übernehmen.
-4. Fotos erst nach Login mit kurzlebigen, serverseitig signierten Uploads und privaten Medienberechtigungen aktivieren. Anbieter-Secrets nur im Secret Store des Servers hinterlegen, nie im Client, in `EXPO_PUBLIC_*` oder in Git.
-5. Melden, Blockieren, Moderation und Kontolöschung vor dem öffentlichen Start umsetzen und testen.
+## Autor
 
-Es wurde noch kein Backend eingerichtet und nichts veröffentlicht.
+Michael Koch · [GitHub](https://github.com/michkffm) · [Portfolio](https://michael-koch-portfolio.vercel.app/)
+
+Ursprünglicher HeartPulse-Code: [Pacome-Adoufack](https://github.com/Pacome-Adoufack).
