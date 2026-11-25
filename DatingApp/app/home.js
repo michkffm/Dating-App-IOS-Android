@@ -3,12 +3,10 @@ import {
   Text,
   SafeAreaView,
   ScrollView,
-  Image,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 const handleOuiClick = () => {
@@ -23,39 +21,7 @@ const handleMessageClick = () => {
   console.log("MESSAGE clic");
 };
 
-const CLOUDINARY_URL =
-  "https://api.cloudinary.com/v1_1/dtmedui7o/resources/image";
-
 const Home = () => {
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchImages();
-  }, []);
-
-  const fetchImages = async () => {
-    try {
-      const response = await fetch(CLOUDINARY_URL, {
-        method: "GET",
-        headers: {
-          Authorization:
-            "Basic " + btoa("627916952935623:TzoalQafmKlJfwmhVI2VTogEwOI"), // Remplace API_KEY & API_SECRET
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.resources) {
-        setImages(data.resources.map((img) => img.secure_url));
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des images :", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -64,34 +30,15 @@ const Home = () => {
         </View>
 
         <View style={styles.profileContainer}>
-          {/* Loader pendant la récupération des images */}
-          {loading && (
-            <ActivityIndicator
-              size="large"
-              color="#FF5864"
-              style={styles.loader}
-            />
-          )}
-
-          {/* ScrollView horizontal pour afficher les images */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.imageGallery}
-          >
-            {images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.cloudinaryImage}
-              />
-            ))}
-          </ScrollView>
+          <View style={{ padding: 20, alignItems: "center" }}>
+            <Icon name="favorite" size={64} color="#FF5864" />
+            <Text>Beispielprofil · Fotos sind derzeit deaktiviert.</Text>
+          </View>
 
           {/* Profile Info */}
           <View style={styles.profileInfo}>
             <View style={styles.statusContainer}>
-              <Text style={styles.statusText}>Korsion aktiv</Text>
+              <Text style={styles.statusText}>Demo-Profil</Text>
             </View>
 
             <Text style={styles.nameText}>Gina 24</Text>
@@ -202,7 +149,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 20,
   },
-  cloudinaryImage: {
+  placeholderImage: {
     width: 400,
     height: 500,
     borderRadius: 10,
