@@ -266,7 +266,7 @@ export default function Live() {
       try {
         await api(verification ? "/api/verify-email" : "/api/reset-password", {
           method: "POST",
-          data: verification ? { token: value.toLowerCase() } : { token: value.toLowerCase(), password: newPassword },
+          data: { token: value.toLowerCase(), password: newPassword },
         });
       } catch (e) {
         if ([400, 404, 410, 422].includes(e.status)) {
@@ -274,6 +274,7 @@ export default function Live() {
           setTypedToken("");
           throw new ApiError(e.status, "Der Link oder Code ist ungültig oder abgelaufen. Sie können einen neuen anfordern.");
         }
+        if (verification && e.status === 401) throw new ApiError(401, "Das Passwort stimmt nicht mit der Registrierung überein.");
         throw e;
       }
       changeAuth("login");
@@ -408,10 +409,10 @@ export default function Live() {
                   autoCapitalize="none" autoComplete="off" autoCorrect={false} secureTextEntry maxLength={64} />
               </>
             )}
-            {!verification && <Field label="Neues Passwort (mindestens 12 Zeichen)" value={newPassword}
-              onChangeText={setNewPassword} secureTextEntry autoComplete="new-password" maxLength={128} />}
+            <Field label={verification ? "Passwort aus der Registrierung" : "Neues Passwort (mindestens 12 Zeichen)"} value={newPassword}
+              onChangeText={setNewPassword} secureTextEntry autoComplete={verification ? "current-password" : "new-password"} maxLength={128} />
             <Button label={verification ? "E-Mail-Adresse jetzt bestätigen" : "Neues Passwort speichern"}
-              disabled={busy || !isAccountToken(linkToken || typedToken.trim()) || (!verification && newPassword.length < 12)}
+              disabled={busy || !isAccountToken(linkToken || typedToken.trim()) || newPassword.length < 12}
               onPress={() => submitAccountAction(phase)} />
             <Button label="Neuen Link anfordern" secondary disabled={busy} onPress={() => changeAuth(verification ? "check-email" : "forgot")} />
             <Button label="Zum Login" secondary disabled={busy} onPress={() => changeAuth("login")} />

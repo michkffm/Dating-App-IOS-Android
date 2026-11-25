@@ -57,6 +57,7 @@ async function main() {
         case "POST /api/forgot-password":
           assert.equal(data().email, email); return json({}, 202);
         case "POST /api/verify-email":
+          assert.equal(data().password, initial);
           if (data().token === expired) return json({ error: "Der Link ist abgelaufen oder ungültig." }, 400);
           assert.ok(registered); assert.ok([verify, manual].includes(data().token));
           verified = true; return route.fulfill({ status: 204 });
@@ -103,16 +104,19 @@ async function main() {
     await shown("Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.");
 
     await emailLink("verify", expired, "E-Mail-Bestätigung abschließen");
+    await fill("Passwort aus der Registrierung", initial);
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Der Link oder Code ist ungültig oder abgelaufen. Sie können einen neuen anfordern.");
 
     await emailLink("verify", verify, "E-Mail-Bestätigung abschließen");
     assert.equal(observed.filter(v => v === "POST /api/verify-email").length, 1);
+    await fill("Passwort aus der Registrierung", initial);
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Ihre E-Mail-Adresse wurde bestätigt. Sie können sich jetzt anmelden.");
     await button("E-Mail-Bestätigung öffnen").click();
     await button("Code eingeben").click();
     await fill("Code aus dem Link", manual);
+    await fill("Passwort aus der Registrierung", initial);
     await button("E-Mail-Adresse jetzt bestätigen").click();
     await shown("Ihre E-Mail-Adresse wurde bestätigt. Sie können sich jetzt anmelden.");
 

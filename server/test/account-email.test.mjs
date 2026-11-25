@@ -68,7 +68,7 @@ test("Resend sends plain account mail with a single recipient and refuses the te
 test("account email confirmation, expiry, password reset, replay, session revocation", {timeout:45000}, async(t)=>{
   const db=await openDb();
   const queued=[], errors=[];
-  const app=createApp({db,dailyMailLimit:3,origins:["http://localhost:3407"],accountMail:{async send(mail){queued.push(mail);}},log:x=>errors.push(x)});
+  const app=createApp({db,production:true,registration:true,dailyMailLimit:3,origins:["http://localhost:3407"],accountMail:{async send(mail){queued.push(mail);}},log:x=>errors.push(x)});
   const server=createServer(app.handler);
   await new Promise((resolve,reject)=>server.once("error",reject).listen(0,"127.0.0.1",resolve));
   t.after(async()=>{await new Promise(resolve=>server.close(resolve));await db.close();});
@@ -80,7 +80,11 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   const call=async(path,{body,method=body?"POST":"GET",status=200,cookie}={})=>{
     const res=await fetch(base+path,{method,headers:{origin:"http://localhost:3407",...(cookie?{cookie}:{}),...(body?{"content-type":"application/json"}:{})},body:body&&JSON.stringify(body)});
     assert.equal(res.status,status,path);
-    return {json:res.status===204?null:await res.json(),cookie:res.headers.get("set-cookie")?.split(";")[0]||null};
+    const rawCookie=res.headers.get("set-cookie");
+    assert.match(res.headers.get("strict-transport-security")||"",/max-age=[1-9]/);
+    assert.equal(res.headers.get("x-frame-options"),"DENY");
+    if(rawCookie)assert.match(rawCookie,/^__Host-heartpulse=.+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=\d+; Secure$/);
+    return {json:res.status===204?null:await res.json(),cookie:rawCookie?.split(";")[0]||null};
   };
   async function until(count){
     for(let i=0;i<50;i++){if(queued.length>=count)return;await wait(20);}
@@ -105,9 +109,10 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   assert.deepEqual(known.json,unknown.json);
   await until(2);
   await db.query("UPDATE hp_account_tokens SET expires_at=now()-interval '1 second' WHERE token_hash=$1",[hash]);
-  await call("/api/verify-email",{body:{token:queued[0].token},status:400});
-  await call("/api/verify-email",{body:{token:queued[1].token},status:204});
-  await call("/api/verify-email",{body:{token:queued[1].token},status:400});
+  await call("/api/verify-email",{body:{token:queued[0].token,password:initial},status:400});
+  await call("/api/verify-email",{body:{token:queued[1].token,password:"another invalid password"},status:401});
+  await call("/api/verify-email",{body:{token:queued[1].token,password:initial},status:204});
+  await call("/api/verify-email",{body:{token:queued[1].token,password:initial},status:400});
   const session=await call("/api/login",{body:{email,password:initial}});
   assert.ok(session.cookie);
   await call("/api/me",{cookie:session.cookie});
@@ -117,7 +122,7 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   );
   await until(3);
   assert.equal(queued[2].purpose,"reset");
-  await call("/api/verify-email",{body:{token:queued[2].token},status:400});
+  await call("/api/verify-email",{body:{token:queued[2].token,password:initial},status:400});
   await call("/api/reset-password",{body:{token:queued[2].token,password:replacement},status:204});
   await call("/api/reset-password",{body:{token:queued[2].token,password:initial},status:400});
   await call("/api/me",{cookie:session.cookie,status:401});

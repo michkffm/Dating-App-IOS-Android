@@ -72,3 +72,10 @@ CREATE TABLE IF NOT EXISTS hp_mail_daily_usage (
   day date PRIMARY KEY,
   count integer NOT NULL CHECK (count > 0)
 );
+
+-- Foreign-key lookups used when invalidating sessions or deleting an account.
+CREATE INDEX IF NOT EXISTS hp_sessions_user ON hp_sessions(user_id);
+CREATE INDEX IF NOT EXISTS hp_choices_target ON hp_choices(target);
+CREATE INDEX IF NOT EXISTS hp_blocks_target ON hp_blocks(target);
+CREATE INDEX IF NOT EXISTS hp_messages_sender ON hp_messages(sender_id);
+CREATE INDEX IF NOT EXISTS hp_reports_target ON hp_reports(target);

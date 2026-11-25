@@ -27,7 +27,7 @@ const uuid = (value) => {
 };
 const normalizeMail = (value) => {
   const mail=field(value,5,254,"Ungültige E-Mail-Adresse.").toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) deny(400,"Ungültige E-Mail-Adresse.");
+  if (!/^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(mail)) deny(400,"Ungültige E-Mail-Adresse.");
   return mail;
 };
 let activePasswordChecks = 0;
@@ -42,9 +42,10 @@ async function hashPassword(value, salt = randomBytes(16).toString("hex")) {
 const DUMMY = "0".repeat(32)+":"+"0".repeat(128);
 async function passwordOk(value, existing) {
   if(typeof value!=="string" || value.length>128) return false;
-  const encoded=existing||DUMMY;
+  const stored=typeof existing==="string"&&/^[0-9a-f]{32}:[0-9a-f]{128}$/.test(existing);
+  const encoded=stored?existing:DUMMY;
   const computed=await hashPassword(value,encoded.split(":")[0]);
-  return timingSafeEqual(Buffer.from(computed),Buffer.from(encoded)) && !!existing;
+  return timingSafeEqual(Buffer.from(computed),Buffer.from(encoded)) && stored;
 }
 function dob(value){
   if(typeof value!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) deny(400,"Bitte ein gültiges Geburtsdatum eingeben.");
@@ -126,7 +127,15 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
   }
   async function session(req,res,user,native){
     const token=randomBytes(32).toString("hex");
-    await db.query("INSERT INTO hp_sessions(key_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),user.id]);
+    const insert=(conn)=>conn.query("INSERT INTO hp_sessions(key_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),user.id]);
+    if(user.password_hash){
+      await db.transaction(async tx=>{
+        const current=await one(tx,"SELECT password_hash,verified_at,suspended_at FROM hp_users WHERE id=$1 FOR UPDATE",[user.id]);
+        if(!current||current.suspended_at||current.password_hash!==user.password_hash) deny(401,badAuth);
+        if(accountMail&&!current.verified_at) deny(403,"Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.");
+        await insert(tx);
+      });
+    }else await insert(db);
     if(!native) res.setHeader("Set-Cookie",cookie(cookieName,token,production,604800));
     return { user: publicUser(user), ...(native?{token}:{}) };
   }
@@ -192,14 +201,15 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
       const input=await json(req);
       const purpose=path==="/api/verify-email"?"verify":"reset";
       if(typeof input.token!=="string" || !/^[0-9a-f]{64}$/.test(input.token)) deny(400,invalidLink);
-      if(purpose==="reset") requirePassword(input.password);
+      requirePassword(input.password);
       const tokenHash=digest(input.token);
-      const pending=await one(db,"SELECT user_id FROM hp_account_tokens WHERE token_hash=$1 AND purpose=$2 AND expires_at>now()",[tokenHash,purpose]);
+      const pending=await one(db,"SELECT t.user_id,u.password_hash FROM hp_account_tokens t JOIN hp_users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.purpose=$2 AND t.expires_at>now() AND u.suspended_at IS NULL",[tokenHash,purpose]);
       if(!pending) deny(400,invalidLink);
+      if(purpose==="verify"&&!await passwordOk(input.password,pending.password_hash)) deny(401,"Passwort stimmt nicht mit der Registrierung überein.");
       const newHash=purpose==="reset"?await hashPassword(input.password):null;
       await db.transaction(async tx=>{
-        const user=await one(tx,"SELECT id,verified_at FROM hp_users WHERE id=$1 FOR UPDATE",[pending.user_id]);
-        if(!user) deny(400,invalidLink);
+        const user=await one(tx,"SELECT id,verified_at,password_hash,suspended_at FROM hp_users WHERE id=$1 FOR UPDATE",[pending.user_id]);
+        if(!user||user.suspended_at||(purpose==="verify"&&user.password_hash!==pending.password_hash)) deny(400,invalidLink);
         const claimed=await one(tx,"DELETE FROM hp_account_tokens WHERE token_hash=$1 AND purpose=$2 AND user_id=$3 AND expires_at>now() RETURNING user_id",[tokenHash,purpose,user.id]);
         if(!claimed) deny(400,invalidLink);
         if(purpose==="verify"){
@@ -371,6 +381,10 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
   }
   return {
     async handler(req,res){
+      if(production){
+        res.setHeader("Strict-Transport-Security","max-age=15552000");
+        res.setHeader("X-Frame-Options","DENY");
+      }
       try { return await route(req,res); }
       catch(error){
         if(res.headersSent) { res.destroy(); return; }
