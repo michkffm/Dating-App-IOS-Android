@@ -84,8 +84,10 @@ const noTarget = "Profil nicht verfügbar.";
 function cookie(name, value, production, maxAge) {
   return name+"="+value+"; Path=/; HttpOnly; SameSite=Strict; Max-Age="+maxAge+(production?"; Secure":"");
 }
-export function createApp({db, media=null, accountMail=null, dailyMailLimit=100, origins=[], production=false, registration=!production, staticHandler, log=console.error}){
+export function createApp({db, media=null, accountMail=null, dailyMailLimit=100, origins=[], production=false, registration=!production, registrationAllowlist=[], staticHandler, log=console.error}){
   if(!Number.isInteger(dailyMailLimit)||dailyMailLimit<1||dailyMailLimit>300) throw new Error("Invalid daily account mail limit");
+  const pilot=new Set(registrationAllowlist.map(normalizeMail));
+  if(pilot.size>10) throw new Error("Invalid pilot registration allowlist");
   const allowed=new Set(origins);
   let lastAccountActivity=0;
   const cookieName=production?"__Host-heartpulse":"heartpulse_local";
@@ -175,7 +177,7 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
       return send(res,204);
     }
     if(!["GET","HEAD"].includes(method) && !native && !origin) deny(403,"Ursprung nicht erlaubt.");
-    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media,accountEmail:!!accountMail,registration}); }
+    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media,accountEmail:!!accountMail,registration,...(pilot.size&&!registration?{registrationPilot:true}:{})}); }
     if(method==="POST" && ["/api/resend-verification","/api/forgot-password"].includes(path)){
       if(!accountMail) deny(503,"E-Mail-Versand ist noch nicht verfügbar.");
       checkRate("email-ip:"+ip,30,3600000);
@@ -217,7 +219,7 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
       const input=await json(req), email=normalizeMail(input.email);
       checkRate("authaccount:"+email,10,600000);
       if(path==="/api/register"){
-        if(!registration) deny(403,"Registrierung ist noch nicht freigegeben.");
+        if(!registration&&!pilot.has(email)) deny(403,"Registrierung ist noch nicht freigegeben.");
         requirePassword(input.password);
         const nickname=field(input.nickname,2,24,"Spitzname muss 2 bis 24 Zeichen haben."), birth=dob(input.birthdate);
         let created;

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDb } from "../db.mjs";
 import { createApp } from "../app.mjs";
+import { transportHeaders } from "../../DatingApp/src/native-transport.cjs";
 import { openReports, decideReport } from "../moderation.mjs";
 
 test("database/API: identity, mutual matches, protected chat and photos, blocking, reports, deletion", {timeout:45000}, async (t) => {
@@ -29,7 +30,7 @@ test("database/API: identity, mutual matches, protected chat and photos, blockin
   const pw="example password with spaces";
   const draft=(name)=>({email:name.toLowerCase()+"@example.invalid",password:pw,nickname:name,birthdate:"1995-03-12"});
   const call=async(path,{method="GET",data,cookie,native,token,type,requestOrigin=origin,expected=200}={})=>{
-    const headers={...(requestOrigin?{origin:requestOrigin}:{}),...(cookie?{cookie}:{}),...(native?{"x-heartpulse-native":"1"}:{}),...(token?{authorization:"Bearer "+token}:{})};
+    const headers={...(requestOrigin?{origin:requestOrigin}:{}),...(cookie?{cookie}:{}),...(native?transportHeaders(false,token):{})};
     if(data!==undefined) headers["Content-Type"]=type||"application/json";
     const r=await fetch(address+path,{method,headers,body:data===undefined?undefined:type?data:JSON.stringify(data)});
     let value=null;
@@ -72,6 +73,7 @@ test("database/API: identity, mutual matches, protected chat and photos, blockin
   const photo=(await call("/api/photos",{method:"POST",cookie:ana.cookie,type:"image/png",data:Buffer.from("test image")})).value.user.photo;
   assert.match(photo,/^\/api\/photos\//);
   assert.equal((await call(photo,{cookie:bob.cookie})).value.toString(),"test image");
+  assert.equal((await call(photo,{native:true,requestOrigin:null,token:native.value.token})).value.toString(),"test image");
   await call(photo,{expected:401});
   await call("/api/report",{cookie:bob.cookie,method:"POST",data:{targetId:A,reason:"Test-Meldegrund"},expected:204});
   assert.equal((await db.query("SELECT count(*) AS count FROM hp_reports")).rows[0].count,1);

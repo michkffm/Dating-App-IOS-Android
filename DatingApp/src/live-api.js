@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { transportHeaders } from "./native-transport.cjs";
 
 const web = Platform.OS === "web";
 export const LIVE_ENABLED = process.env.EXPO_PUBLIC_LIVE_ENABLED === "true";
@@ -39,9 +40,7 @@ export async function api(path, { method = "GET", data, raw, type, token, signal
   if (!LIVE_ENABLED || origin === null || !path.startsWith("/api/")) {
     throw new ApiError(0, "Der Kontozugang ist nicht eingerichtet.");
   }
-  const headers = { Accept: "application/json" };
-  if (!web && ["/api/login", "/api/register"].includes(path)) headers["X-HeartPulse-Native"] = "1";
-  if (!web && token) headers.Authorization = "Bearer " + token;
+  const headers = { Accept: "application/json", ...transportHeaders(web, token) };
   if (raw !== undefined) headers["Content-Type"] = type;
   else if (data !== undefined) headers["Content-Type"] = "application/json";
   const controller = new AbortController();
@@ -72,5 +71,5 @@ export async function api(path, { method = "GET", data, raw, type, token, signal
 export function photoSource(path, token) {
   const origin = apiOrigin();
   if (origin === null || typeof path !== "string" || !/^\/api\/photos\/[A-Za-z0-9_-]+$/.test(path)) return null;
-  return { uri: origin + path, ...(!web && token ? { headers: { Authorization: "Bearer " + token } } : {}) };
+  return { uri: origin + path, ...(web ? {} : { headers: transportHeaders(false, token) }) };
 }

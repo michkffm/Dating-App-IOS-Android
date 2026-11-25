@@ -107,3 +107,26 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   assert.equal(app.hasRecentAccountActivity(),true);
   assert.deepEqual(errors,[]);
 });
+
+test("hosted pilot gates registration to authorized test inboxes without opening it globally",{timeout:45000},async(t)=>{
+  const db=await openDb();
+  const messages=[];
+  const origin="http://localhost:3407";
+  const allowed="fixture-pilot@example.invalid";
+  const app=createApp({db,origins:[origin],registration:false,registrationAllowlist:[allowed],accountMail:{async send(item){messages.push(item);}}});
+  const server=createServer(app.handler);
+  await new Promise((resolve,reject)=>server.once("error",reject).listen(0,"127.0.0.1",resolve));
+  t.after(async()=>{await new Promise(resolve=>server.close(resolve));await db.close();});
+  const base="http://127.0.0.1:"+server.address().port;
+  const registration=async email=>fetch(base+"/api/register",{method:"POST",headers:{origin,"Content-Type":"application/json"},body:JSON.stringify({email,nickname:"Pilot",birthdate:"1997-01-01",password:"A synthetic test phrase"})});
+  const status=await (await fetch(base+"/api/health")).json();
+  assert.equal(status.registration,false);
+  assert.equal(status.registrationPilot,true);
+  assert.equal((await registration("not-on-list@example.invalid")).status,403);
+  const invited=await registration(allowed.toUpperCase());
+  assert.equal(invited.status,202);
+  assert.equal(invited.headers.get("set-cookie"),null);
+  for(let i=0;i<30&&messages.length===0;i++) await wait(20);
+  assert.deepEqual(messages.map(x=>x.recipient),[allowed]);
+  assert.equal((await db.query("SELECT count(*) AS n FROM hp_users")).rows[0].n,1);
+});

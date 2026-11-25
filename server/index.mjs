@@ -22,7 +22,11 @@ if(production&&!configured.length) throw new Error("APP_ORIGINS required for pro
 if(production) verifyProductionDbUrl(env.DATABASE_URL);
 const accountMail=configureAccountMail({brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:accountMailOrigin,production});
 if(production && accountMailOrigin && !configured.includes(accountMailOrigin)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
-if(production && env.REGISTRATION_ENABLED==="true" && !accountMail) throw new Error("Production registration requires configured account email");
+const wantsPublicSignup=env.REGISTRATION_ENABLED==="true";
+const registrationAllowlist=(env.REGISTRATION_TEST_EMAILS||"").split(",").map(x=>x.trim()).filter(Boolean);
+const wantsSignup=wantsPublicSignup||registrationAllowlist.length>0;
+if(production && wantsSignup && !accountMail) throw new Error("Production registration requires configured account email");
+if(production && wantsSignup && (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET)) throw new Error("Production registration requires the protected media provider");
 if(production && env.NODE_TLS_REJECT_UNAUTHORIZED==="0") throw new Error("TLS verification must remain enabled");
 if(!env.DATABASE_URL) await mkdir(dirname(localDir),{recursive:true,mode:0o700});
 const db=await openDb({url:env.DATABASE_URL,dir:localDir});
@@ -30,7 +34,8 @@ const media=cloudMedia({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINAR
 const app=createApp({
   db, media, accountMail, production, dailyMailLimit:Number(env.ACCOUNT_MAIL_DAILY_LIMIT||100),
   origins:[...configured,...(production?[]:["http://127.0.0.1:"+port,"http://localhost:"+port])],
-  registration:production?env.REGISTRATION_ENABLED==="true":env.REGISTRATION_ENABLED!=="false",
+  registration:production?wantsPublicSignup:env.REGISTRATION_ENABLED!=="false",
+  registrationAllowlist,
   staticHandler:staticWeb(env.HEARTPULSE_WEB_DIR)
 });
 let collecting=false;

@@ -27,7 +27,10 @@ continuous responsiveness cannot be promised at 0 €.
 4. In a controlled environment, test with authorized test inboxes, two synthetic profiles and
    a harmless test image. Verify real delivery, password reset/session revocation, signed private
    media, account deletion and image cleanup, blocked access, and iOS and Android device flows.
-   Do not turn on public registration until the operator has reviewed the measures.
+   For a supervised pilot keep `REGISTRATION_ENABLED=false`. Allow only operator-approved test inboxes via
+   the protected Render variable `REGISTRATION_TEST_EMAILS` (up to ten, comma-separated).
+   Do not turn on public registration until the operator has reviewed the measures and the real send and photo tests pass.
+   Remove the pilot allowlist when it is no longer needed.
 5. Keep registration closed if quotas or privacy checks fail. The app reserves a persistent
    daily email budget (100 by default; 300 maximum) before it requests provider delivery.
    Configure provider-side usage alerts and review processing agreements, backups and moderation
