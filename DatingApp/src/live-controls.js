@@ -11,7 +11,9 @@ export function LiveScreen({ children, busy, error, notice }) {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.outer}>
         <View style={styles.content}>
           {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{error}</Text> : null}
-          {notice ? <Text accessibilityLiveRegion="polite" style={styles.body}>{notice}</Text> : null}
+          {notice ? <View style={local.notice}>
+            <Text accessibilityRole="status" accessibilityLiveRegion="polite" style={styles.body}>{notice}</Text>
+          </View> : null}
           {busy ? <ActivityIndicator accessibilityLabel="Wird geladen" color={colors.purple} /> : null}
           {children}
         </View>
@@ -110,6 +112,7 @@ export function Person({ person, token, children, showImage = true }) {
 }
 
 const local = StyleSheet.create({
+  notice: { borderRadius: 12, backgroundColor: "#EFE5FF", padding: 12 },
   authHeader: { alignItems: "flex-start", gap: 8, paddingTop: 8, paddingBottom: 4 },
   brandMark: { width: 48, height: 48, borderRadius: 16, backgroundColor: "#EFE5FF", alignItems: "center", justifyContent: "center" },
   accountLinks: { borderTopWidth: 1, borderColor: colors.border, paddingTop: 4 },

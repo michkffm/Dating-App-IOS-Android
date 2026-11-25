@@ -265,6 +265,7 @@ export default function Live() {
         emailCapability.current = true;
         setAccountEmail(true);
         changeAuth("check-email");
+        setNotice("Bestätigung angefordert. Wenn die Registrierung möglich ist, erhalten Sie einen Bestätigungslink per E-Mail.");
         return;
       }
       if (!result.user || (Platform.OS !== "web" && !result.token)) {
@@ -412,7 +413,7 @@ export default function Live() {
           <AuthHeading title={verification ? "E-Mail-Adresse bestätigen" : "Passwort vergessen"} />
           <View style={styles.card}>
             {body(verification
-              ? "Öffnen Sie den Link in Ihrem Postfach. Sehen Sie bei Bedarf auch im Spamordner nach."
+              ? "Sobald die E-Mail ankommt, öffnen Sie den Link. Falls keine Nachricht ankommt, prüfen Sie auch den Spamordner oder fordern Sie den Link erneut an."
               : "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen anzufordern.")}
             <Field label="E-Mail-Adresse" value={account.email} onChangeText={(email) => setAccount((current) => ({ ...current, email }))}
               keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />

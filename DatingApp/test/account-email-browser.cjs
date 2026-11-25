@@ -97,6 +97,7 @@ async function main() {
     await fill("Geburtsdatum (TT.MM.JJJJ)", "12.04.1995");
     await button("Registrieren").click();
     await shown("E-Mail-Adresse bestätigen");
+    await shown("Bestätigung angefordert. Wenn die Registrierung möglich ist, erhalten Sie einen Bestätigungslink per E-Mail.");
     await button("Bestätigungslink erneut senden").click();
     await shown("Wenn eine Bestätigung aussteht, erhalten Sie einen neuen Link per E-Mail.");
     await button("Zum Login").click();
