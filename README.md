@@ -24,6 +24,14 @@ npx expo export --platform all
 - Spitzname und Auswahl werden auf dem Testgerät bzw. im Browser gespeichert und lassen sich unter „Profil & Datenschutz“ löschen. Die Demo fordert keine personenbezogenen Angaben an. Bitte keine echten Namen oder sonstigen persönlichen Angaben eingeben.
 - Kein Konto, Upload, Tracking, Chat mit echten Personen oder Zahlungsverkehr.
 
+## Web-Demo als statische Vorschau hosten
+
+Für Vercel den Projektordner `DatingApp` auswählen. Die Konfiguration baut mit
+`npm run build:web` nach `dist` und unterstützt direkte Aufrufe der vier Demo-Routen.
+Die Vorschau braucht keine Zugangsdaten und sendet keine Netzwerkabfragen an eine API.
+Die Hosting-Konfiguration blockiert solche Verbindungen sowie Kamera-, Mikrofon-
+und Standortzugriff. Das ist eine Demo, kein Backend und kein nativer Store-Release.
+
 ## Vor Hosting und echten Konten
 
 1. Den im ursprünglichen Git-Stand exponierten Cloudinary-Schlüssel im Anbieter-Dashboard widerrufen oder rotieren und dessen Aktivität prüfen. Das Entfernen aus dem neuen Arbeitsstand löscht bestehende Kopien und die Git-Historie nicht.
