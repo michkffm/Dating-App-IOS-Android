@@ -30,8 +30,11 @@ The API never includes a user's email or birth date in other people's profile re
 
 Not publicly deployed. Public registration is disabled in production while email verification, password recovery, staffed moderation, native device tests and a hosted PostgreSQL/Cloudinary integration test are pending.
 
-## Author
+## Development and Design
+
+**Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and **Michael Koch** worked together on HeartPulse.
+
+[![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
+[![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
 
 Michael Koch · [GitHub](https://github.com/michkffm) · [Portfolio](https://michael-koch-portfolio.vercel.app/)
-
-Original HeartPulse code: [Pacome-Adoufack](https://github.com/Pacome-Adoufack).
