@@ -1,8 +1,14 @@
 # HeartPulse
 
-[English](README.en.md) · [GitHub](https://github.com/michkffm/Dating-App-IOS-Android)
+[HeartPulse öffnen](https://heartpulse.onrender.com) · [English](README.en.md) · [GitHub](https://github.com/michkffm/Dating-App-IOS-Android)
 
 HeartPulse ist eine Dating-App für iOS, Android und Web. Sie verbindet ein Expo-Frontend mit einer Node.js-API und PostgreSQL. Dazu gehören Registrierung und Anmeldung, Profile, Likes, gegenseitige Matches, Chat und Kontolöschung. Nutzende können Profile melden oder sperren. Fotos werden über einen serverseitigen Cloudinary-Adapter verarbeitet.
+
+## Live-Web-App
+
+[![Die gehostete HeartPulse-Anmeldeseite](docs/heartpulse-login.png)](https://heartpulse.onrender.com)
+
+Die Anmeldeseite ist öffentlich erreichbar. Die Registrierung neuer Konten ist derzeit geschlossen.
 
 ## Gemeinschaftsprojekt
 
@@ -46,7 +52,7 @@ Die API-Tests prüfen Anmeldung, Session-Schutz, gegenseitige Matches, Zugriff a
 - Web-Sitzungen verwenden ein HttpOnly-Cookie. Die API prüft den Ursprung mutierender Anfragen, begrenzt sensible Zugriffe und speichert nur gehashte Sitzungstoken.
 - Echte Zugangsdaten gehören in den Secret Store des Hosters. Die bisher veröffentlichten Schlüssel müssen in Cloudinary widerrufen werden; nicht für Produktion wiederverwenden.
 
-**Freigabe:** Noch nicht öffentlich in Betrieb. Kontobestätigung, Passwort-Wiederherstellung und die Meldungsbearbeitung wurden lokal mit Testdaten geprüft. Vor der öffentlichen Registrierung müssen E-Mail-Versand, zentraler PostgreSQL-Dienst und Cloudinary eingerichtet und gemeinsam getestet werden. Dazu gehören echte iOS- und Android-Geräte und eine verantwortliche Person für Meldungen. Die Registrierung bleibt im Hosting standardmäßig aus.
+**Freigabe:** Die Web-App ist auf Render erreichbar; die Registrierung neuer Konten ist geschlossen. Kontobestätigung, Passwort-Wiederherstellung und die Meldungsbearbeitung wurden lokal mit Testdaten geprüft. Vor der öffentlichen Registrierung müssen E-Mail-Versand, PostgreSQL und Cloudinary in der gehosteten Umgebung gemeinsam getestet werden. Dazu gehören echte iOS- und Android-Geräte und eine verantwortliche Person für Meldungen. Die Registrierung bleibt im Hosting standardmäßig aus.
 
 ## E-Mail und Moderation
 
@@ -59,8 +65,7 @@ Das Dockerfile bündelt Web und API für den Betrieb auf demselben Ursprung.
 Für einen Render-Webdienst ist `/api/health` als Healthcheck vorgesehen.
 `APP_ORIGINS` muss exakt die freigegebene HTTPS-Adresse enthalten; der
 PostgreSQL-Zugang und die neu ausgestellten Cloudinary-Schlüssel werden nur
-als Secrets am Dienst hinterlegt. Der PostgreSQL-Endpunkt muss TLS mit Prüfung von Zertifikat und Hostname unterstützen (`sslmode=verify-full`). Das Dockerfile wurde vorbereitet, aber der Container noch
-nicht auf Render betrieben. Die Produktion lässt öffentliche Registrierung
+als Secrets am Dienst hinterlegt. Der PostgreSQL-Endpunkt muss TLS mit Prüfung von Zertifikat und Hostname unterstützen (`sslmode=verify-full`). Der Container läuft auf Render. Die Produktion lässt öffentliche Registrierung
 ohne konfigurierten E-Mail-Versand nicht zu. Auch nach der Einrichtung erst nach Freigabetest aktivieren.
 
 ## Autor
