@@ -19,7 +19,7 @@ Die Anmeldeseite ist öffentlich erreichbar. Die Registrierung neuer Konten ist 
 
 ## Voraussetzungen
 
-- Node.js 24 und npm
+- Node.js 24.3 oder neuer innerhalb der 24er-Reihe und npm
 - Für native Installationen: ein mit dem Expo SDK kompatibler Development Build
 - Für eine Einrichtung außerhalb des Macs: PostgreSQL und ein eigener Cloudinary-Zugang eingerichtet über den Secret Store des Hosters
 
@@ -56,13 +56,13 @@ Die API-Tests prüfen Anmeldung, Session-Schutz, gegenseitige Matches, Zugriff a
 
 ## E-Mail und Moderation
 
-- Für Bestätigung und Passwort-Wiederherstellung müssen `SMTP_URL`, `MAIL_FROM` und `PUBLIC_APP_ORIGIN` gesetzt sein. In Produktion liegt der Host der Links auf der freigegebenen HTTPS-Adresse und der Mailtransport nutzt TLS. Die Datenbank speichert nur Fingerabdrücke der zeitlich begrenzten Einmal-Codes. Ein Passwortwechsel beendet bestehende Sitzungen.
+- Für Bestätigung und Passwort-Wiederherstellung braucht der konfigurierte Mailanbieter einen Schlüssel und einen freigegebenen Absender. Auf Render nutzt HeartPulse Resend über HTTPS. Links verweisen auf die freigegebene HTTPS-Adresse. Die Datenbank speichert nur Fingerabdrücke der zeitlich begrenzten Einmal-Codes. Ein Passwortwechsel beendet bestehende Sitzungen.
 - Autorisierte Betreiber lesen Meldungen mit `npm run moderate -- queue` im Serverordner und schließen sie nach Prüfung mit `dismiss REPORT_ID` oder `suspend REPORT_ID --confirm` ab. Es gibt keinen öffentlich erreichbaren Admin-Endpunkt. Die Ausgabe enthält Meldungsdaten und gehört nicht in öffentliche Logs, Tickets oder Chats.
 
 ## Vorbereitung fürs Hosting
 
 Das Dockerfile bündelt Web und API für den Betrieb auf demselben Ursprung.
-Für einen Render-Webdienst ist `/api/health` als Healthcheck vorgesehen.
+Der Render-Healthcheck nutzt `/healthz`; `/api/health` prüft zusätzlich PostgreSQL und meldet den Konfigurationsstand der Dienste.
 `APP_ORIGINS` muss exakt die freigegebene HTTPS-Adresse enthalten; der
 PostgreSQL-Zugang und die neu ausgestellten Cloudinary-Schlüssel werden nur
 als Secrets am Dienst hinterlegt. Der PostgreSQL-Endpunkt muss TLS mit Prüfung von Zertifikat und Hostname unterstützen (`sslmode=verify-full`). Der Container läuft auf Render. Die Produktion lässt öffentliche Registrierung

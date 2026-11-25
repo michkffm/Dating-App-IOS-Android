@@ -19,7 +19,7 @@ The sign-in page is publicly accessible. New account registration is currently c
 
 ## Local development
 
-Use Node.js 24 and npm.
+Use Node.js 24.3 or later within the 24.x series, and npm.
 
 ```sh
 cd DatingApp
@@ -43,7 +43,7 @@ The API never includes a user's email or birth date in other people's profile re
 
 The web app is hosted on Render, with new account registration closed. Account email verification, password recovery, and moderation tooling were tested locally with fictional data. Before enabling it, verify transactional mail, hosted PostgreSQL, Cloudinary, and real iOS/Android devices, and assign an operator to review reports.
 
-Set `SMTP_URL`, `MAIL_FROM`, and `PUBLIC_APP_ORIGIN` for account email. Production requires HTTPS for account links and TLS for SMTP. Password recovery revokes existing sessions. Authorized operators can run `npm run moderate -- queue` from the server directory; report data is private and should not be copied to public logs or issues.
+Configure a mail provider and an approved sender for account email. HeartPulse uses Resend over HTTPS on Render, and production account links require HTTPS. Password recovery revokes existing sessions. Authorized operators can run `npm run moderate -- queue` from the server directory; report data is private and should not be copied to public logs or issues.
 
 ## Author
 
