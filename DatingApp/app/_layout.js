@@ -13,6 +13,7 @@ export default function Layout() {
         <Stack.Screen name="home" options={{ title: "Entdecken" }} />
         <Stack.Screen name="profile" options={{ title: "Profil & Datenschutz" }} />
         <Stack.Screen name="matches" options={{ title: "Demo-Matches" }} />
+        <Stack.Screen name="live" options={{ title: "HeartPulse · Konto" }} />
       </Stack>
     </DemoProvider>
   );
