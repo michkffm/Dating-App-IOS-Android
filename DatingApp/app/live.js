@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Platform, Text, View } from "react-native";
+import { AppState, Platform, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -131,14 +131,16 @@ export default function Live() {
     return () => controller.abort();
   }, []);
 
-  // A focused chat refreshes automatically while it is open. Session loss
-  // remains visible and does not send credentials to another origin.
+  // Poll only an open chat in the foreground; background tabs and apps do not
+  // consume the hosted API and database allowance.
   useFocusEffect(React.useCallback(() => {
     if (!session || pane !== "chat" || !match) return;
     let pending = false;
     const controller = new AbortController();
-    const interval = setInterval(async () => {
-      if (pending || lock.current) return;
+    const page = Platform.OS === "web" && typeof document !== "undefined" ? document : null;
+    const refresh = async () => {
+      const foreground = page ? page.visibilityState !== "hidden" : !["inactive", "background"].includes(AppState.currentState);
+      if (!foreground || pending || lock.current || controller.signal.aborted) return;
       pending = true;
       try {
         const result = await api("/api/matches/" + encodeURIComponent(match.id) + "/messages", { token, signal: controller.signal });
@@ -152,8 +154,16 @@ export default function Live() {
       } finally {
         pending = false;
       }
-    }, 5000);
-    return () => { controller.abort(); clearInterval(interval); };
+    };
+    const interval = setInterval(refresh, 5000);
+    const subscription = page ? null : AppState.addEventListener("change", (state) => { if (state === "active") void refresh(); });
+    page?.addEventListener("visibilitychange", refresh);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+      page?.removeEventListener("visibilitychange", refresh);
+      subscription?.remove();
+    };
   }, [session, pane, match, token]));
 
   useEffect(() => {

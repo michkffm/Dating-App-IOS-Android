@@ -5,7 +5,7 @@ import { setTimeout as wait } from "node:timers/promises";
 import { createHash } from "node:crypto";
 import { createApp } from "../app.mjs";
 import { openDb, verifyProductionDbUrl } from "../db.mjs";
-import { smtpAccountMail } from "../account-mail.mjs";
+import { smtpAccountMail,brevoAccountMail,configureAccountMail } from "../account-mail.mjs";
 
 test("production requires certificate verification for PostgreSQL",()=>{
   const fixture="postgresql://fixture:test@database.example.invalid/heartpulse";
@@ -21,10 +21,31 @@ test("SMTP configuration fails safely without credentials or a trusted origin",(
   assert.throws(()=>smtpAccountMail({smtpUrl:"smtps://test:fixture@mail.example.invalid",from:"help@example.invalid",publicOrigin:"http://test.example.invalid",production:true}));
 });
 
+test("Brevo uses the fixed HTTPS endpoint and retains the code only in the link fragment",async()=>{
+  const bodyToken="0".repeat(64);
+  const calls=[];
+  const credentials={apiKey:"example-fixture-not-a-secret",from:"heartpulse@example.invalid",publicOrigin:"https://test.example.invalid",production:true};
+  const client=brevoAccountMail({...credentials,fetchFn:async (url, options)=>{
+    calls.push({url,options}); return new Response(null,{status:201});
+  }});
+  await client.send({purpose:"verify",recipient:"recipient@example.invalid",token:bodyToken});
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].url,"https://api.brevo.com/v3/smtp/email");
+  assert.equal(calls[0].options.redirect,"error");
+  const request=JSON.parse(calls[0].options.body);
+  assert.equal(request.to[0].email,"recipient@example.invalid");
+  assert.match(request.textContent,/https:\/\/test\.example\.invalid\/live#verify=/);
+  assert.ok(!request.textContent.includes(credentials.apiKey)&&!request.htmlContent);
+  await assert.rejects(()=>client.send({purpose:"toString",recipient:"recipient@example.invalid",token:bodyToken}));
+  assert.throws(()=>configureAccountMail({...credentials,brevoKey:credentials.apiKey,smtpUrl:"smtps://example.invalid"}));
+  const offline=brevoAccountMail({...credentials,fetchFn:async()=>new Response("opaque",{status:429})});
+  await assert.rejects(()=>offline.send({purpose:"reset",recipient:"recipient@example.invalid",token:bodyToken}),/not accepted/);
+});
+
 test("account email confirmation, expiry, password reset, replay, session revocation", {timeout:45000}, async(t)=>{
   const db=await openDb();
   const queued=[], errors=[];
-  const app=createApp({db,origins:["http://localhost:3407"],accountMail:{async send(mail){queued.push(mail);}},log:x=>errors.push(x)});
+  const app=createApp({db,dailyMailLimit:3,origins:["http://localhost:3407"],accountMail:{async send(mail){queued.push(mail);}},log:x=>errors.push(x)});
   const server=createServer(app.handler);
   await new Promise((resolve,reject)=>server.once("error",reject).listen(0,"127.0.0.1",resolve));
   t.after(async()=>{await new Promise(resolve=>server.close(resolve));await db.close();});
@@ -42,6 +63,8 @@ test("account email confirmation, expiry, password reset, replay, session revoca
     for(let i=0;i<50;i++){if(queued.length>=count)return;await wait(20);}
     assert.fail("No test email observed");
   }
+  await call("/healthz",{status:204});
+  assert.equal(app.hasRecentAccountActivity(),false);
   assert.deepEqual((await call("/api/health")).json,{status:"ok",media:false,accountEmail:true});
   const signup=await call("/api/register",{body:profile,status:202});
   assert.deepEqual(signup.json,{verificationRequired:true});
@@ -77,5 +100,10 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   await call("/api/me",{cookie:session.cookie,status:401});
   await call("/api/login",{body:{email,password:initial},status:401});
   assert.ok((await call("/api/login",{body:{email,password:replacement}})).cookie);
+  await call("/api/forgot-password",{body:{email},status:202});
+  await wait(150);
+  assert.equal(queued.length,3);
+  assert.equal((await db.query("SELECT count FROM hp_mail_daily_usage")).rows[0].count,3);
+  assert.equal(app.hasRecentAccountActivity(),true);
   assert.deepEqual(errors,[]);
 });

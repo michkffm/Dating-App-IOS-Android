@@ -84,8 +84,10 @@ const noTarget = "Profil nicht verfügbar.";
 function cookie(name, value, production, maxAge) {
   return name+"="+value+"; Path=/; HttpOnly; SameSite=Strict; Max-Age="+maxAge+(production?"; Secure":"");
 }
-export function createApp({db, media=null, accountMail=null, origins=[], production=false, registration=!production, staticHandler, log=console.error}){
+export function createApp({db, media=null, accountMail=null, dailyMailLimit=100, origins=[], production=false, registration=!production, staticHandler, log=console.error}){
+  if(!Number.isInteger(dailyMailLimit)||dailyMailLimit<1||dailyMailLimit>300) throw new Error("Invalid daily account mail limit");
   const allowed=new Set(origins);
+  let lastAccountActivity=0;
   const cookieName=production?"__Host-heartpulse":"heartpulse_local";
   const limiters=new Map();
   let pendingMail=0;
@@ -98,7 +100,13 @@ export function createApp({db, media=null, accountMail=null, origins=[], product
         if(!user || (purpose==="verify"?!!user.verified_at:!user.verified_at)) return;
         const validFor=purpose==="verify"?"24 hours":"30 minutes";
         const token=randomBytes(32).toString("hex");
-        await db.query("INSERT INTO hp_account_tokens(token_hash,purpose,user_id,expires_at) VALUES($1,$2,$3,now()+$4::interval)",[digest(token),purpose,user.id,validFor]);
+        const reserved=await db.transaction(async tx=>{
+          const slot=await one(tx,"INSERT INTO hp_mail_daily_usage(day,count) VALUES((now() AT TIME ZONE 'UTC')::date,1) ON CONFLICT(day) DO UPDATE SET count=hp_mail_daily_usage.count+1 WHERE hp_mail_daily_usage.count<$1 RETURNING day",[dailyMailLimit]);
+          if(!slot) return false;
+          await tx.query("INSERT INTO hp_account_tokens(token_hash,purpose,user_id,expires_at) VALUES($1,$2,$3,now()+$4::interval)",[digest(token),purpose,user.id,validFor]);
+          return true;
+        });
+        if(!reserved) return;
         await accountMail.send({purpose,recipient:email,token});
       } catch { log("Account mail not sent"); }
       finally { pendingMail--; }
@@ -142,6 +150,10 @@ export function createApp({db, media=null, accountMail=null, origins=[], product
   }
   async function route(req,res){
     const path = new URL(req.url,"http://local.invalid").pathname;
+    if (path==="/healthz" && ["GET","HEAD"].includes(req.method)) {
+      res.setHeader("Cache-Control","no-store");
+      return send(res,204);
+    }
     if(!path.startsWith("/api/")) return staticHandler ? await staticHandler(req,res,path) : send(res,404,{error:"Nicht gefunden."});
     const origin=req.headers.origin;
     const native=!origin && req.headers["x-heartpulse-native"]==="1";
@@ -232,6 +244,7 @@ export function createApp({db, media=null, accountMail=null, origins=[], product
     const actor=await one(db,"SELECT s.user_id FROM hp_sessions s JOIN hp_users u ON u.id=s.user_id WHERE s.key_hash=$1 AND s.expires_at>now() AND u.suspended_at IS NULL",[key]);
     if(!actor) deny(401,"Bitte anmelden.");
     const me=actor.user_id;
+    lastAccountActivity=Date.now();
     checkRate("api:"+me,200,60000);
 
     if(path==="/api/logout" && method==="POST"){
@@ -365,5 +378,6 @@ export function createApp({db, media=null, accountMail=null, origins=[], product
       }
     },
     collectMedia,
+    hasRecentAccountActivity: (time=Date.now()) => lastAccountActivity>0 && time-lastAccountActivity<180000,
   };
 }

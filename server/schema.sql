@@ -68,3 +68,7 @@ ALTER TABLE hp_users ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
 ALTER TABLE hp_reports ADD COLUMN IF NOT EXISTS handled_at timestamptz;
 ALTER TABLE hp_reports ADD COLUMN IF NOT EXISTS resolution varchar(16) CHECK (resolution IN ('dismissed','suspended'));
 CREATE INDEX IF NOT EXISTS hp_open_reports ON hp_reports(created_at,id) WHERE handled_at IS NULL;
+CREATE TABLE IF NOT EXISTS hp_mail_daily_usage (
+  day date PRIMARY KEY,
+  count integer NOT NULL CHECK (count > 0)
+);

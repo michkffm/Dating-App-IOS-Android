@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { createApp } from "./app.mjs";
 import { openDb, verifyProductionDbUrl } from "./db.mjs";
 import { cloudMedia } from "./media.mjs";
-import { smtpAccountMail } from "./account-mail.mjs";
+import { configureAccountMail } from "./account-mail.mjs";
 import { staticWeb } from "./static.mjs";
 
 const env=process.env, production=env.NODE_ENV==="production";
@@ -18,7 +18,7 @@ for(const value of configured){
 }
 if(production&&!configured.length) throw new Error("APP_ORIGINS required for production");
 if(production) verifyProductionDbUrl(env.DATABASE_URL);
-const accountMail=smtpAccountMail({smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:env.PUBLIC_APP_ORIGIN,production});
+const accountMail=configureAccountMail({brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:env.PUBLIC_APP_ORIGIN,production});
 if(production && env.PUBLIC_APP_ORIGIN && !configured.includes(env.PUBLIC_APP_ORIGIN)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
 if(production && env.REGISTRATION_ENABLED==="true" && !accountMail) throw new Error("Production registration requires configured account email");
 if(production && env.NODE_TLS_REJECT_UNAUTHORIZED==="0") throw new Error("TLS verification must remain enabled");
@@ -26,19 +26,20 @@ if(!env.DATABASE_URL) await mkdir(dirname(localDir),{recursive:true,mode:0o700})
 const db=await openDb({url:env.DATABASE_URL,dir:localDir});
 const media=cloudMedia({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,apiSecret:env.CLOUDINARY_API_SECRET});
 const app=createApp({
-  db, media, accountMail, production,
+  db, media, accountMail, production, dailyMailLimit:Number(env.ACCOUNT_MAIL_DAILY_LIMIT||100),
   origins:[...configured,...(production?[]:["http://127.0.0.1:"+port,"http://localhost:"+port])],
   registration:production?env.REGISTRATION_ENABLED==="true":env.REGISTRATION_ENABLED!=="false",
   staticHandler:staticWeb(env.HEARTPULSE_WEB_DIR)
 });
 let collecting=false;
 const housekeeping=setInterval(async()=>{
-  if(collecting) return;
+  if(collecting || !app.hasRecentAccountActivity()) return;
   collecting=true;
   try{
     await app.collectMedia();
     await db.query("DELETE FROM hp_sessions WHERE expires_at<=now()");
     await db.query("DELETE FROM hp_account_tokens WHERE expires_at<=now()");
+    await db.query("DELETE FROM hp_mail_daily_usage WHERE day<(now() AT TIME ZONE 'UTC')::date-14");
   } catch { console.error("Housekeeping delayed"); }
   finally { collecting=false; }
 },60000);
