@@ -4,6 +4,13 @@
 
 HeartPulse is a dating app for iOS, Android and the web. It combines an Expo frontend, a Node.js API and PostgreSQL. Features include account registration, sign-in, profiles, likes, mutual matches, chat, reporting, blocking and account deletion. A server-side Cloudinary adapter handles photos.
 
+## Collaborative Project
+
+**Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and **Michael Koch** worked together on HeartPulse.
+
+[![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
+[![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
+
 ## Local development
 
 Use Node.js 24 and npm.
@@ -32,7 +39,4 @@ Not publicly deployed. Public registration is disabled in production while email
 
 ## Author
 
-**Pacome Adoufack Tsamo** developed and designed HeartPulse. Pacome and **Michael Koch** worked together on HeartPulse.
-
-[![Pacome on GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
-[![Pacome on LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
+Michael Koch
