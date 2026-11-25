@@ -52,11 +52,9 @@ aktiv bleiben. Das Dockerfile wurde vorbereitet, aber der Container noch
 nicht auf Render betrieben. Die Produktion lässt öffentliche Registrierung
 bis zu den oben genannten Freigabekriterien nicht zu.
 
-## Entwicklung und Gestaltung
+## Autor
 
 **Pacome Adoufack Tsamo** hat HeartPulse entwickelt und gestaltet. Pacome und **Michael Koch** haben an HeartPulse zusammengearbeitet.
 
 [![Pacome auf GitHub](docs/icons/github.svg)](https://github.com/Pacome-Adoufack)
 [![Pacome auf LinkedIn](docs/icons/linkedin.svg)](https://www.linkedin.com/in/pacome-adoufack-tsamo-8a2972317/)
-
-Michael Koch · [GitHub](https://github.com/michkffm) · [Portfolio](https://michael-koch-portfolio.vercel.app/)
