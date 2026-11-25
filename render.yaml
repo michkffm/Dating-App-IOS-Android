@@ -13,17 +13,3 @@ services:
         value: "100"
       - key: DATABASE_URL
         sync: false
-      - key: APP_ORIGINS
-        sync: false
-      - key: PUBLIC_APP_ORIGIN
-        sync: false
-      - key: MAIL_FROM
-        sync: false
-      - key: BREVO_API_KEY
-        sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false

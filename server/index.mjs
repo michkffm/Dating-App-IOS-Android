@@ -11,15 +11,17 @@ const env=process.env, production=env.NODE_ENV==="production";
 const port=Number(env.PORT||3407);
 if(!Number.isInteger(port)||port<1||port>65535) throw new Error("Invalid PORT");
 const localDir=resolve(env.HEARTPULSE_DB_DIR||".heartpulse-data/db");
-const configured=env.APP_ORIGINS?env.APP_ORIGINS.split(",").map(x=>x.trim()):[];
+const renderOrigin=env.RENDER==="true"?env.RENDER_EXTERNAL_URL:undefined;
+const configured=env.APP_ORIGINS?env.APP_ORIGINS.split(",").map(x=>x.trim()):renderOrigin?[renderOrigin]:[];
+const accountMailOrigin=env.PUBLIC_APP_ORIGIN||((env.BREVO_API_KEY||env.SMTP_URL)?renderOrigin:undefined);
 for(const value of configured){
   const u=new URL(value);
   if(u.origin!==value || (production&&u.protocol!=="https:")) throw new Error("Invalid APP_ORIGINS");
 }
 if(production&&!configured.length) throw new Error("APP_ORIGINS required for production");
 if(production) verifyProductionDbUrl(env.DATABASE_URL);
-const accountMail=configureAccountMail({brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:env.PUBLIC_APP_ORIGIN,production});
-if(production && env.PUBLIC_APP_ORIGIN && !configured.includes(env.PUBLIC_APP_ORIGIN)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
+const accountMail=configureAccountMail({brevoKey:env.BREVO_API_KEY,smtpUrl:env.SMTP_URL,from:env.MAIL_FROM,publicOrigin:accountMailOrigin,production});
+if(production && accountMailOrigin && !configured.includes(accountMailOrigin)) throw new Error("PUBLIC_APP_ORIGIN must be permitted");
 if(production && env.REGISTRATION_ENABLED==="true" && !accountMail) throw new Error("Production registration requires configured account email");
 if(production && env.NODE_TLS_REJECT_UNAUTHORIZED==="0") throw new Error("TLS verification must remain enabled");
 if(!env.DATABASE_URL) await mkdir(dirname(localDir),{recursive:true,mode:0o700});

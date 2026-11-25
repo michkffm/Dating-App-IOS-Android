@@ -17,9 +17,11 @@ continuous responsiveness cannot be promised at 0 €.
 
 1. Create the data and media resources in the correct accounts. Keep all values out of Git.
    Create the Render service from `render.yaml` using **Free** and confirm the assigned HTTPS URL.
-2. Set `APP_ORIGINS` and `PUBLIC_APP_ORIGIN` to that exact origin. Define a verified `MAIL_FROM`.
-   Set the Brevo API key, certificate-verified database connection string, and newly rotated
-   Cloudinary key only in Render's protected environment variables.
+2. The Blueprint initially requests only `DATABASE_URL`. Render supplies its service URL automatically;
+   an owned domain, sender credentials and Cloudinary credentials are optional during the first deployment.
+   Registration stays closed. To test real photos and account mail, add a new Cloudinary key, the Brevo
+   API key and a verified `MAIL_FROM` in Render's protected environment. Only override `APP_ORIGINS`
+   and `PUBLIC_APP_ORIGIN` if you are intentionally using a different, authorized HTTPS origin.
 3. Verify `/healthz` (process health) and `/api/health` (real DB and configured capabilities).
    The platform health check must not ping the database directly every few seconds.
 4. In a controlled environment, test with authorized test inboxes, two synthetic profiles and

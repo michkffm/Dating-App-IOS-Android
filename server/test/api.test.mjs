@@ -37,7 +37,7 @@ test("database/API: identity, mutual matches, protected chat and photos, blockin
     assert.equal(r.status,expected,`${method} ${path} ${JSON.stringify(value)}`);
     return {r,value,cookie:r.headers.get("set-cookie")?.split(";")[0]};
   };
-  assert.deepEqual((await call("/api/health")).value,{status:"ok",media:true,accountEmail:false});
+  assert.deepEqual((await call("/api/health")).value,{status:"ok",media:true,accountEmail:false,registration:true});
   await call("/api/register",{method:"POST",data:draft("Anon"),requestOrigin:"https://elsewhere.invalid",expected:403});
   await call("/api/register",{method:"POST",data:{...draft("Minor"),birthdate:new Date().toISOString().slice(0,10)},expected:400});
   const ana=await call("/api/register",{method:"POST",data:draft("Ana"),expected:201});

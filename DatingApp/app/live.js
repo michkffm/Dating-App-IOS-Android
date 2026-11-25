@@ -19,6 +19,7 @@ export default function Live() {
   const [session, setSession] = useState(null);
   const [mediaReady, setMediaReady] = useState(false);
   const [accountEmail, setAccountEmail] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
   const [phase, setPhase] = useState("starting");
   const [pane, setPane] = useState("discover");
   const [account, setAccount] = useState(emptyAccount);
@@ -108,6 +109,7 @@ export default function Live() {
     async function init() {
       try {
         const health = await api("/api/health", { signal });
+        if (!signal.aborted) setRegistrationOpen(health.registration !== false);
         if (signal.aborted) return;
         setMediaReady(health.media === true || ["ready", "configured", "available", "cloudinary"].includes(health.media));
         emailCapability.current = health.accountEmail === true;
@@ -430,7 +432,8 @@ export default function Live() {
             {body("HeartPulse ist ab 18. Im Profil erscheint nur Ihr Alter, nicht Ihr Geburtsdatum.")}
           </>}
           <Button label={register ? "Registrieren" : "Anmelden"} disabled={busy || !canSubmit} onPress={submitAuth} />
-          <Button label={register ? "Zum Login" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />
+          {(register || registrationOpen) && <Button label={register ? "Zum Login" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />}
+          {!register && !registrationOpen && body("Die öffentliche Registrierung ist derzeit geschlossen.")}
           {accountEmail && !register && <>
             <Button label="Passwort vergessen" secondary disabled={busy} onPress={() => changeAuth("forgot")} />
             <Button label="E-Mail-Bestätigung öffnen" secondary disabled={busy} onPress={() => changeAuth("check-email")} />

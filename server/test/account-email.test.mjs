@@ -65,7 +65,7 @@ test("account email confirmation, expiry, password reset, replay, session revoca
   }
   await call("/healthz",{status:204});
   assert.equal(app.hasRecentAccountActivity(),false);
-  assert.deepEqual((await call("/api/health")).json,{status:"ok",media:false,accountEmail:true});
+  assert.deepEqual((await call("/api/health")).json,{status:"ok",media:false,accountEmail:true,registration:true});
   const signup=await call("/api/register",{body:profile,status:202});
   assert.deepEqual(signup.json,{verificationRequired:true});
   assert.equal(signup.cookie,null);

@@ -175,7 +175,7 @@ export function createApp({db, media=null, accountMail=null, dailyMailLimit=100,
       return send(res,204);
     }
     if(!["GET","HEAD"].includes(method) && !native && !origin) deny(403,"Ursprung nicht erlaubt.");
-    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media,accountEmail:!!accountMail}); }
+    if(path==="/api/health" && method==="GET"){ await db.query("SELECT 1"); return send(res,200,{status:"ok",media:!!media,accountEmail:!!accountMail,registration}); }
     if(method==="POST" && ["/api/resend-verification","/api/forgot-password"].includes(path)){
       if(!accountMail) deny(503,"E-Mail-Versand ist noch nicht verfügbar.");
       checkRate("email-ip:"+ip,30,3600000);
