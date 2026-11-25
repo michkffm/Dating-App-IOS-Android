@@ -32,6 +32,10 @@ Die Vorschau braucht keine Zugangsdaten und sendet keine Netzwerkabfragen an ein
 Die Hosting-Konfiguration blockiert solche Verbindungen sowie Kamera-, Mikrofon-
 und Standortzugriff. Das ist eine Demo, kein Backend und kein nativer Store-Release.
 
+**Freigabe offen:** Das verwendete Expo SDK 52 und seine Abhängigkeiten sind
+veraltet. Den Dependency-Audit nach dem Upgrade wiederholen. Eine öffentliche
+Auslieferung erst nach Prüfung der verbleibenden hohen und kritischen Meldungen.
+
 ## Vor Hosting und echten Konten
 
 1. Den im ursprünglichen Git-Stand exponierten Cloudinary-Schlüssel im Anbieter-Dashboard widerrufen oder rotieren und dessen Aktivität prüfen. Das Entfernen aus dem neuen Arbeitsstand löscht bestehende Kopien und die Git-Historie nicht.
