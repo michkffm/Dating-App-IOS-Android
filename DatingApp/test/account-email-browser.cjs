@@ -90,6 +90,8 @@ async function main() {
     }
 
     await page.goto(origin + "/live");
+    await shown("Bei HeartPulse anmelden");
+    assert.deepEqual(await page.getByRole("button").allTextContents(), ["Anmelden", "Passwort vergessen", "Konto erstellen"]);
     await button("Konto erstellen").click();
     await fill("E-Mail-Adresse", email);
     await fill("Passwort", initial);

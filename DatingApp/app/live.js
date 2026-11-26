@@ -419,9 +419,11 @@ export default function Live() {
               keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
             <Button label={verification ? "Bestätigungslink erneut senden" : "Link zum Zurücksetzen anfordern"} disabled={busy || !account.email.trim()}
               onPress={() => requestAccountMail(verification ? "verify" : "reset")} />
-            <Button label="Code eingeben" secondary disabled={busy} onPress={() => changeAuth(verification ? "verify" : "reset")} />
-            <Button label="Zum Login" secondary disabled={busy} onPress={() => changeAuth("login")} />
+            <AccountLinks>
+              <TextAction label="Code eingeben" disabled={busy} onPress={() => changeAuth(verification ? "verify" : "reset")} />
+            </AccountLinks>
           </View>
+          <TextAction label="Zum Login" disabled={busy} onPress={() => changeAuth("login")} />
         </LiveScreen>
       );
     }
@@ -443,9 +445,11 @@ export default function Live() {
             <Button label={verification ? "E-Mail-Adresse jetzt bestätigen" : "Neues Passwort speichern"}
               disabled={busy || !isAccountToken(linkToken || typedToken.trim()) || newPassword.length < 12}
               onPress={() => submitAccountAction(phase)} />
-            <Button label="Neuen Link anfordern" secondary disabled={busy} onPress={() => changeAuth(verification ? "check-email" : "forgot")} />
-            <Button label="Zum Login" secondary disabled={busy} onPress={() => changeAuth("login")} />
+            <AccountLinks>
+              <TextAction label="Neuen Link anfordern" disabled={busy} onPress={() => changeAuth(verification ? "check-email" : "forgot")} />
+            </AccountLinks>
           </View>
+          <TextAction label="Zum Login" disabled={busy} onPress={() => changeAuth("login")} />
         </LiveScreen>
       );
     }
@@ -462,19 +466,21 @@ export default function Live() {
           <Field label="E-Mail-Adresse" value={account.email} onChangeText={on("email")} keyboardType="email-address" autoCapitalize="none" autoComplete="email" maxLength={254} />
           <Field label="Passwort" value={account.password} onChangeText={on("password")} autoCapitalize="none" secureTextEntry autoComplete={register ? "new-password" : "current-password"} maxLength={128} />
           {register && <>
-            {body("Wählen Sie ein Passwort mit mindestens 12 Zeichen.")}
+            {body("Mindestens 12 Zeichen für das Passwort.")}
+            {registrationPilot && body("Die Registrierung ist derzeit nur mit einer eingeladenen E-Mail-Adresse möglich.")}
             <Field label="Nickname" value={account.nickname} onChangeText={on("nickname")} maxLength={24} />
             <BirthdateField value={account.birthdate} onChange={on("birthdate")} />
             {body("HeartPulse ist ab 18. Im Profil erscheint nur Ihr Alter, nicht Ihr Geburtsdatum.")}
           </>}
           {register && registrationFeedback ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{registrationFeedback}</Text> : null}
           <Button label={register ? "Registrieren" : "Anmelden"} disabled={busy || !canSubmit} onPress={submitAuth} />
-          {(register || registrationOpen || registrationPilot) && <Button label={register ? "Zum Login" : registrationPilot ? "Eingeladenes Konto erstellen" : "Konto erstellen"} secondary disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />}
-          {!register && !registrationOpen && body(registrationPilot ? "Die Registrierung ist derzeit nur für eingeladene Konten geöffnet." : "Die öffentliche Registrierung ist derzeit geschlossen.")}
           {accountEmail && !register && <AccountLinks>
             <TextAction label="Passwort vergessen" disabled={busy} onPress={() => changeAuth("forgot")} />
           </AccountLinks>}
         </View>
+        {(register || registrationOpen || registrationPilot) && (
+          <TextAction label={register ? "Zum Login" : "Konto erstellen"} disabled={busy} onPress={() => changeAuth(register ? "login" : "register")} />
+        )}
       </LiveScreen>
     );
   }

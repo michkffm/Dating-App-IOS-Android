@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, styles } from "./experience";
+import { Button, colors, styles } from "./experience";
 import { photoSource } from "./live-api";
 
 export function LiveScreen({ children, busy, error, notice }) {
@@ -99,10 +99,30 @@ export function Field({ label, onFocus, onBlur, multiline, ...props }) {
 
 export function Person({ person, token, children, showImage = true }) {
   const source = photoSource(person.photo, token);
+  const [expanded, setExpanded] = useState(false);
   return (
     <View style={styles.card}>
       {showImage && (source
-        ? <Image source={source} accessibilityLabel={"Profilfoto von " + person.nickname} style={local.photo} resizeMode="cover" />
+        ? <>
+          <Pressable accessibilityRole="button" accessibilityLabel={"Profilfoto von " + person.nickname}
+            accessibilityHint="Öffnet das Foto in voller Größe." onPress={() => setExpanded(true)}>
+            {({ hovered, focused }) => <>
+              <Image source={source} accessible={false} style={local.photo} resizeMode="cover" />
+              <View style={[local.photoBadge, (hovered || focused) && local.photoBadgeActive]} aria-hidden={true}>
+                <Ionicons name="expand-outline" size={19} color={hovered || focused ? "#fff" : colors.purple} accessible={false} />
+              </View>
+            </>}
+          </Pressable>
+          <Modal visible={expanded} transparent onRequestClose={() => setExpanded(false)}>
+            <View style={local.photoBackdrop}>
+              <View accessibilityViewIsModal style={local.photoDialog}>
+                <Image source={source} accessibilityLabel={"Vergrößertes Foto von " + person.nickname}
+                  style={local.fullPhoto} resizeMode="contain" />
+                <Button label="Foto schließen" secondary onPress={() => setExpanded(false)} />
+              </View>
+            </View>
+          </Modal>
+        </>
         : <View style={local.avatar}><Ionicons name="person-circle-outline" color={colors.purple} size={72} accessible={false} aria-hidden={true} /></View>)}
       <Text accessibilityRole="header" style={styles.heading}>{person.nickname}, {person.age}</Text>
       {person.bio ? <Text style={styles.body}>{person.bio}</Text> : null}
@@ -133,4 +153,9 @@ const local = StyleSheet.create({
   multiline: { minHeight: 90, textAlignVertical: "top" },
   avatar: { width: "100%", minHeight: 132, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "#EFE5FF" },
   photo: { width: "100%", aspectRatio: 4 / 3, borderRadius: 18, backgroundColor: "#EFE5FF" },
+  photoBadge: { position: "absolute", end: 12, bottom: 12, width: 38, height: 38, borderRadius: 12, backgroundColor: "#EFE5FF", alignItems: "center", justifyContent: "center" },
+  photoBadgeActive: { backgroundColor: colors.purple },
+  photoBackdrop: { flex: 1, padding: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(38, 22, 65, 0.84)" },
+  photoDialog: { width: "100%", maxWidth: 680, height: "85%", maxHeight: 720, gap: 10 },
+  fullPhoto: { flex: 1, minHeight: 0, width: "100%", borderRadius: 12 },
 });
