@@ -10,6 +10,14 @@
 
 *Screenshot of the web app with a fictional sample profile.*
 
+## iOS app
+
+<a href="docs/heartpulse-ios.png"><img src="docs/heartpulse-ios.png" width="300" alt="HeartPulse on iOS: landing screen with Create account and Sign in"></a>
+
+*Native iOS app running in the iPhone Simulator.*
+
+[Run the iOS app locally with Xcode](docs/ios.md#ios-simulator-en)
+
 ## Features
 
 - Discover profiles, express interest, and match when the interest is mutual

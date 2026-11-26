@@ -10,6 +10,14 @@
 
 *Screenshot der Web-App mit einem fiktiven Beispielprofil.*
 
+## iOS-App
+
+<a href="docs/heartpulse-ios.png"><img src="docs/heartpulse-ios.png" width="300" alt="HeartPulse auf iOS: Startseite mit Konto erstellen und Anmelden"></a>
+
+*Native iOS-App im iPhone-Simulator.*
+
+[iOS-App lokal in Xcode starten](docs/ios.md#ios-simulator)
+
 ## Funktionen
 
 - Profile entdecken, Interesse zeigen und bei gegenseitigem Interesse ein Match erhalten
